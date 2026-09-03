@@ -5,6 +5,7 @@ import '../../core/logger/app_logger.dart';
 import '../../domain/services/installer_adapter.dart';
 import 'adapters/altstore_adapter.dart';
 import 'adapters/sidestore_adapter.dart';
+import 'adapters/android_adapter.dart';
 
 /// Manager for all installer adapters
 class InstallerManager {
@@ -16,9 +17,11 @@ class InstallerManager {
   }
 
   void _registerDefaultAdapters() {
+    _registry.register(AndroidInstallerAdapter());
     _registry.register(AltStoreAdapter());
     _registry.register(SideStoreAdapter());
-    _logger.info('Default installer adapters registered');
+    _logger.info('Default installer adapters registered: '
+        'Android, AltStore, SideStore');
   }
 
   /// Register a custom installer adapter

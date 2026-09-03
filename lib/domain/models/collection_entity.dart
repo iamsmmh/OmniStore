@@ -26,45 +26,46 @@ class CollectionEntity with _$CollectionEntity {
 class DefaultCollections {
   DefaultCollections._();
 
-  static const music = CollectionEntity(
-    id: 'music',
-    name: 'Music',
-    icon: 'music_note',
-    color: '#E91E63',
-    appIds: [],
-    createdAt: null,
-    isSystem: true,
-  );
+  static CollectionEntity get music => CollectionEntity(
+        id: 'music',
+        name: 'Music',
+        icon: 'music_note',
+        color: '#E91E63',
+        appIds: const [],
+        createdAt: DateTime(2024, 1, 1),
+        isSystem: true,
+      );
 
-  static const productivity = CollectionEntity(
-    id: 'productivity',
-    name: 'Productivity',
-    icon: 'work',
-    color: '#2196F3',
-    appIds: [],
-    createdAt: null,
-    isSystem: true,
-  );
+  static CollectionEntity get productivity => CollectionEntity(
+        id: 'productivity',
+        name: 'Productivity',
+        icon: 'work',
+        color: '#2196F3',
+        appIds: const [],
+        createdAt: DateTime(2024, 1, 1),
+        isSystem: true,
+      );
 
-  static const social = CollectionEntity(
-    id: 'social',
-    name: 'Social',
-    icon: 'people',
-    color: '#4CAF50',
-    appIds: [],
-    createdAt: null,
-    isSystem: true,
-  );
+  static CollectionEntity get social => CollectionEntity(
+        id: 'social',
+        name: 'Social',
+        icon: 'people',
+        color: '#4CAF50',
+        appIds: const [],
+        createdAt: DateTime(2024, 1, 1),
+        isSystem: true,
+      );
 
-  static const development = CollectionEntity(
-    id: 'development',
-    name: 'Development',
-    icon: 'code',
-    color: '#FF9800',
-    appIds: [],
-    createdAt: null,
-    isSystem: true,
-  );
+  static CollectionEntity get development => CollectionEntity(
+        id: 'development',
+        name: 'Development',
+        icon: 'code',
+        color: '#FF9800',
+        appIds: const [],
+        createdAt: DateTime(2024, 1, 1),
+        isSystem: true,
+      );
 
-  static const all = [music, productivity, social, development];
+  static List<CollectionEntity> get all =>
+      [music, productivity, social, development];
 }

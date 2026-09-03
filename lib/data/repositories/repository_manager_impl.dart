@@ -11,6 +11,10 @@ import '../datasources/remote/api_client.dart';
 import '../datasources/remote/providers/github_provider.dart';
 import '../datasources/remote/providers/altstore_provider.dart';
 import '../datasources/remote/providers/omnisource_provider.dart';
+import '../datasources/remote/providers/gitlab_provider.dart';
+import '../datasources/remote/providers/codeberg_provider.dart';
+import '../datasources/remote/providers/forgejo_provider.dart';
+import '../datasources/remote/providers/feather_provider.dart';
 
 /// Implementation of RepositoryManager
 class RepositoryManagerImpl implements RepositoryManager {
@@ -33,10 +37,16 @@ class RepositoryManagerImpl implements RepositoryManager {
   }
 
   void _registerProviders() {
+    // Register all repository providers
     _providerRegistry.register(GitHubProvider(_apiClient));
+    _providerRegistry.register(GitLabProvider(_apiClient));
+    _providerRegistry.register(CodebergProvider(_apiClient));
+    _providerRegistry.register(ForgejoProvider(_apiClient));
     _providerRegistry.register(AltStoreProvider(_apiClient));
     _providerRegistry.register(OmniSourceProvider(_apiClient));
-    _logger.info('Repository providers registered');
+    _providerRegistry.register(FeatherProvider(_apiClient));
+    _logger.info('All repository providers registered: '
+        'GitHub, GitLab, Codeberg, Forgejo, AltStore, OmniSource, Feather');
   }
 
   @override

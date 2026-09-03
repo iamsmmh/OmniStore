@@ -120,6 +120,78 @@ class ApiClient {
     }
   }
 
+  // ─── Forgejo API ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getForgejoRepo(
+    String baseUrl,
+    String owner,
+    String repo,
+  ) async {
+    final apiUrl = _buildForgejoApiUrl(baseUrl, owner, repo);
+    final response = await _httpClient.get(apiUrl);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getForgejoReleases(
+    String baseUrl,
+    String owner,
+    String repo, {
+    int perPage = 30,
+    int page = 1,
+  }) async {
+    final apiUrl = _buildForgejoReleasesUrl(baseUrl, owner, repo, perPage, page);
+    try {
+      final response = await _httpClient.get(apiUrl);
+      final data = response.data;
+      if (data is List) {
+        return data.map((e) => e as Map<String, dynamic>).toList();
+      }
+      return [];
+    } catch (e) {
+      _logger.severe('Failed to fetch Forgejo releases', e);
+      return [];
+    }
+  }
+
+  String _buildForgejoApiUrl(String baseUrl, String owner, String repo) {
+    final uri = Uri.parse(baseUrl);
+    return '${uri.scheme}://${uri.host}/api/v1/repos/$owner/$repo';
+  }
+
+  String _buildForgejoReleasesUrl(
+    String baseUrl,
+    String owner,
+    String repo,
+    int perPage,
+    int page,
+  ) {
+    return '${_buildForgejoApiUrl(baseUrl, owner, repo)}/releases?per_page=$perPage&page=$page';
+  }
+
+  // ─── Codeberg API ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getCodebergRepo(String owner, String repo) async {
+    final response = await _httpClient.get(
+      'https://codeberg.org/api/v1/repos/$owner/$repo',
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getCodebergReleases(
+    String owner,
+    String repo, {
+    int perPage = 30,
+    int page = 1,
+  }) async {
+    final response = await _httpClient.get(
+      'https://codeberg.org/api/v1/repos/$owner/$repo/releases',
+      queryParameters: {'per_page': perPage, 'page': page},
+    );
+    return (response.data as List)
+        .map((e) => e as Map<String, dynamic>)
+        .toList();
+  }
+
   // ─── Generic Feed ────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getGenericFeed(String url) async {

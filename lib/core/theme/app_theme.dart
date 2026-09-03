@@ -4,7 +4,8 @@ import 'package:dynamic_color/dynamic_color.dart';
 class AppTheme {
   AppTheme._();
 
-  static const String _fontFamily = 'Inter';
+  // Use system default font since custom fonts are not bundled
+  static const String? _fontFamily = null;
 
   static ColorScheme get lightColorScheme {
     return ColorScheme.fromSeed(
