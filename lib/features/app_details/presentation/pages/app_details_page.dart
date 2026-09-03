@@ -10,7 +10,7 @@ import '../../../../domain/health/health_engine.dart';
 import '../../../../domain/security/trust_analyzer.dart';
 import '../../../../domain/security/trust_engine.dart';
 import '../../../../domain/updates/update_intelligence.dart';
-import '../../../../infrastructure/installer/installer_manager.dart;
+import '../../../../infrastructure/installer/installer_manager.dart';
 
 final appDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, appId) async {
   final repo = ref.watch(appRepositoryProvider);
