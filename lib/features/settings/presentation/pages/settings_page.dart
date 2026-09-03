@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/providers.dart';
-import '../../../../core/monitoring/monitoring_service.dart';
-import '../../../../core/platform/platform_capabilities.dart';
-import '../../../../infrastructure/sync/sync_engine.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -110,7 +107,7 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _showLogs(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => DraggableScrollableSheet(
