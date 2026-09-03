@@ -5,7 +5,6 @@ import 'package:omnistore/core/security/security_service.dart';
 import 'package:omnistore/data/datasources/remote/providers/github_provider.dart';
 import 'package:omnistore/data/datasources/remote/providers/gitlab_provider.dart';
 import 'package:omnistore/data/datasources/remote/providers/codeberg_provider.dart';
-import 'package:omnistore/data/datasources/remote/providers/forgejo_provider.dart';
 import 'package:omnistore/data/datasources/remote/providers/altstore_provider.dart';
 import 'package:omnistore/data/datasources/remote/providers/feather_provider.dart';
 import 'package:omnistore/data/datasources/remote/providers/generic_json_provider.dart';
@@ -54,7 +53,6 @@ void main() {
     });
 
     test('Provider registry detects correctly', () {
-      final registry = apiClient; // dummy to avoid unused
       expect(GitHubProvider(ApiClient(httpClient: HttpClient(), securityService: SecurityService())).type.name, 'github');
     });
   });

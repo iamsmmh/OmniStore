@@ -186,7 +186,7 @@ class SyncEngine {
         if (attempt < maxAttempts) {
           final backoff = _scheduler.backoffFor(attempt);
           _logger.info('Retrying ${task.repositoryId} in ${backoff.inMilliseconds}ms (attempt $attempt)');
-          await Future.delayed(backoff);
+          await Future<void>.delayed(backoff);
         }
       } catch (e) {
         if (attempt >= maxAttempts) {
@@ -194,7 +194,7 @@ class SyncEngine {
           _updateSyncState(task.repositoryId, SyncOutcome.failed);
           return SyncOutcome.failed;
         }
-        await Future.delayed(_scheduler.backoffFor(attempt));
+        await Future<void>.delayed(_scheduler.backoffFor(attempt));
       }
     }
     _updateSyncState(task.repositoryId, SyncOutcome.failed);

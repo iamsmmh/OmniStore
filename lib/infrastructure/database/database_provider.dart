@@ -78,15 +78,15 @@ Future<void> _runMigrations(dynamic isar, dynamic logger) async {
       final seen = <String, AppTable>{};
       final toDelete = <int>[];
       for (final app in apps) {
-        final existing = seen[app.appId as String];
+        final existing = seen[app.appId];
         if (existing == null) {
           seen[app.appId] = app;
         } else {
-          final keepNewer = (app.releaseDate as DateTime).isAfter(existing.releaseDate as DateTime);
+          final keepNewer = app.releaseDate.isAfter(existing.releaseDate);
           final toRemove = keepNewer ? existing : app;
           final toKeep = keepNewer ? app : existing;
           if (toRemove.id != null) toDelete.add(toRemove.id as int);
-          seen[app.appId as String] = toKeep;
+          seen[app.appId] = toKeep;
         }
       }
       for (final id in toDelete) {
