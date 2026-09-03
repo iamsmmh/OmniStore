@@ -104,7 +104,11 @@ class AppDao {
       // Fetch existing for merge
       final existingMap = <String, AppTable>{};
       for (final app in uniqueApps) {
-        final e = await _isar.appTables.where().filter().appIdEqualTo(app.appId).findFirst();
+        final e = _asApp(await _isar.appTables
+            .where()
+            .filter()
+            .appIdEqualTo(app.appId)
+            .findFirst());
         if (e != null) existingMap[app.appId] = e;
       }
       for (final app in uniqueApps) {

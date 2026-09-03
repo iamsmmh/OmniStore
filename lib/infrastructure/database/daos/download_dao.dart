@@ -144,14 +144,16 @@ class DownloadDao {
 
   /// Get queue position
   Future<int> getQueuePosition(String downloadId) async {
-    final pending = await _isar.downloadTables
-        .where()
-        .filter()
-        .statusEqualTo('pending')
-        .or()
-        .statusEqualTo('downloading')
-        .sortByCreatedAt()
-        .findAll();
+    final pending = (await _isar.downloadTables
+            .where()
+            .filter()
+            .statusEqualTo('pending')
+            .or()
+            .statusEqualTo('downloading')
+            .sortByCreatedAt()
+            .findAll()
+        as List)
+        .cast<DownloadTable>();
 
     final index = pending.indexWhere((d) => d.downloadId == downloadId);
     return index >= 0 ? index : -1;
