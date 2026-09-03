@@ -70,8 +70,7 @@ final isarProvider = Provider<Isar>((ref) {
 
 final appRepositoryProvider = Provider<AppRepository>((ref) {
   final database = ref.watch(isarProvider);
-  final apiClient = ref.watch(apiClientProvider);
-  return AppRepositoryImpl(database: database, apiClient: apiClient);
+  return AppRepositoryImpl(database: database);
 });
 
 final repositoryManagerProvider = Provider<RepositoryManager>((ref) {

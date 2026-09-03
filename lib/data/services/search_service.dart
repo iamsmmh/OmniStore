@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'package:collection/collection.dart';
-import 'package:logging/logging.dart';
-
 import '../../core/logger/app_logger.dart';
 import '../../domain/models/app_entity.dart';
 import '../../domain/repositories/app_repository.dart';

@@ -55,7 +55,8 @@ class AltStoreProvider implements RepositoryProvider {
       final sourceData = await _apiClient.getAltStoreSource(url);
       if (sourceData == null || sourceData['apps'] == null) return [];
 
-      final apps = sourceData['apps'] as List;
+      final apps =
+          (sourceData['apps'] as List).cast<Map<String, dynamic>>();
       return apps
           .map((app) => _mapAltStoreApp(app, url))
           .whereType<AppEntity>()

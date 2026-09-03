@@ -1,3 +1,4 @@
+import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 

@@ -39,7 +39,7 @@ class GitHubProvider implements RepositoryProvider {
 
       return RepositoryValidationData(
         isValid: true,
-        name: repoInfo['full_name'] ?? '${parsed['owner']}/${parsed['repo']}',
+        name: repoInfo['full_name'] as String? ?? '${parsed['owner']}/${parsed['repo']}',
         description: repoInfo['description'] as String?,
         iconUrl: repoInfo['owner']?['avatar_url'] as String?,
         maintainer: repoInfo['owner']?['login'] as String?,
