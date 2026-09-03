@@ -1,5 +1,4 @@
 import 'package:isar/isar.dart';
-import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/logger/app_logger.dart';

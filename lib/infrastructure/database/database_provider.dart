@@ -21,25 +21,12 @@ export 'tables/collection_table.dart';
 final databaseProvider = FutureProvider<Isar>((ref) async {
   final dir = await getApplicationDocumentsDirectory();
 
-  if (Isar.hasBeenInitialized()) {
-    return Isar.openSync(
-      schemas: [
-        AppTableSchema(),
-        RepositoryTableSchema(),
-        DownloadTableSchema(),
-        CollectionTableSchema(),
-      ],
-      directory: dir.path,
-      name: AppConstants.databaseName,
-    );
-  }
-
-  return Isar.openSync(
-    schemas: [
-      AppTableSchema(),
-      RepositoryTableSchema(),
-      DownloadTableSchema(),
-      CollectionTableSchema(),
+  return Isar.open(
+    [
+      AppTableSchema,
+      RepositoryTableSchema,
+      DownloadTableSchema,
+      CollectionTableSchema,
     ],
     directory: dir.path,
     name: AppConstants.databaseName,
