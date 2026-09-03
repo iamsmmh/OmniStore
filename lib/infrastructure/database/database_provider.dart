@@ -47,7 +47,7 @@ final databaseProvider = FutureProvider<dynamic>((ref) async {
     if (schemas.isNotEmpty) {
       try {
         final isar = await Isar.open(
-          schemas.cast<CollectionSchema<dynamic>>(),
+          schemas,
           directory: dir.path,
           name: AppConstants.databaseName,
           inspector: true,
@@ -80,7 +80,7 @@ Future<void> _runMigrations(dynamic isar, dynamic logger) async {
       for (final app in apps) {
         final existing = seen[app.appId as String];
         if (existing == null) {
-          seen[app.appId as String] = app;
+          seen[app.appId] = app;
         } else {
           final keepNewer = (app.releaseDate as DateTime).isAfter(existing.releaseDate as DateTime);
           final toRemove = keepNewer ? existing : app;
@@ -160,17 +160,22 @@ class DatabaseService {
   }
 
   Future<T> transaction<T>(Future<T> Function() action) async {
-    return _isar.writeTxn(() async => await action());
+    final result = await _isar.writeTxn(() async => await action());
+    return result as T;
   }
 
   Future<Map<String, dynamic>> integrityCheck() async {
     final appCount = await _isar.appTables.count();
     final repoCount = await _isar.repositoryTables.count();
     final downloadCount = await _isar.downloadTables.count();
-    final repos = await _isar.repositoryTables.where().findAll();
-    final validIds = repos.map((r) => r.repositoryId as String).toSet();
-    final apps = await _isar.appTables.where().findAll();
-    final orphaned = apps.where((a) => (a.repositoryId as String).isNotEmpty && !(validIds as Set<String>).contains(a.repositoryId as String)).length;
+    final repos = (await _isar.repositoryTables.where().findAll() as List)
+        .cast<RepositoryTable>();
+    final validIds = repos.map((r) => r.repositoryId).toSet();
+    final apps = (await _isar.appTables.where().findAll() as List)
+        .cast<AppTable>();
+    final orphaned = apps
+        .where((a) => a.repositoryId.isNotEmpty && !validIds.contains(a.repositoryId))
+        .length;
     return {
       'appCount': appCount,
       'repositoryCount': repoCount,
