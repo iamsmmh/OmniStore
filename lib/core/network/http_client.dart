@@ -18,7 +18,7 @@ class HttpClient {
         'User-Agent': '${AppConstants.appName}/${AppConstants.appVersion}',
       },
     ),
-    ));
+    );
 
     _dio.interceptors.addAll([
       LogInterceptor(
