@@ -1,9 +1,9 @@
-import 'package:isar/isar.dart';
+
 import '../tables/collection_table.dart';
 
 /// Data Access Object for collection operations
 class CollectionDao {
-  final Isar _isar;
+  final dynamic _isar;
 
   CollectionDao(this._isar);
 

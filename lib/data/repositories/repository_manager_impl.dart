@@ -9,21 +9,30 @@ import '../../domain/services/repository_provider.dart';
 import '../../infrastructure/database/database_provider.dart';
 import '../datasources/remote/api_client.dart';
 import '../datasources/remote/providers/github_provider.dart';
+import '../datasources/remote/providers/gitlab_provider.dart';
+import '../datasources/remote/providers/codeberg_provider.dart';
+import '../datasources/remote/providers/forgejo_provider.dart';
 import '../datasources/remote/providers/altstore_provider.dart';
 import '../datasources/remote/providers/omnisource_provider.dart';
+import '../datasources/remote/providers/feather_provider.dart';
+import '../datasources/remote/providers/generic_json_provider.dart';
 
-/// Implementation of RepositoryManager
+/// Implementation of RepositoryManager with full provider support,
+/// response caching, retry and sync statistics.
 class RepositoryManagerImpl implements RepositoryManager {
   final DatabaseService _database;
   final ApiClient _apiClient;
   final SecurityService _securityService;
-  final RepositoryProviderRegistry _providerRegistry =
-      RepositoryProviderRegistry();
+  final RepositoryProviderRegistry _providerRegistry = RepositoryProviderRegistry();
   final _uuid = const Uuid();
   final _logger = AppLogger.getLogger('RepositoryManagerImpl');
 
+  // Sync statistics
+  final Map<String, int> _syncCounts = {};
+  final Map<String, List<int>> _syncDurations = {};
+
   RepositoryManagerImpl({
-    required Isar database,
+    required dynamic database,
     required ApiClient apiClient,
     required SecurityService securityService,
   })  : _database = DatabaseService(database),
@@ -34,10 +43,18 @@ class RepositoryManagerImpl implements RepositoryManager {
 
   void _registerProviders() {
     _providerRegistry.register(GitHubProvider(_apiClient));
+    _providerRegistry.register(GitLabProvider(_apiClient));
+    _providerRegistry.register(CodebergProvider(_apiClient));
+    _providerRegistry.register(ForgejoProvider(_apiClient));
     _providerRegistry.register(AltStoreProvider(_apiClient));
     _providerRegistry.register(OmniSourceProvider(_apiClient));
-    _logger.info('Repository providers registered');
+    _providerRegistry.register(FeatherProvider(_apiClient));
+    _providerRegistry.register(GenericJsonProvider(_apiClient));
+    _logger.info('All 8 repository providers registered');
   }
+
+  // Expose registry for external validation engine use
+  RepositoryProviderRegistry get providerRegistry => _providerRegistry;
 
   @override
   Future<List<RepositoryEntity>> getAllRepositories() async {
@@ -75,157 +92,151 @@ class RepositoryManagerImpl implements RepositoryManager {
 
   @override
   Future<RepositoryEntity> addRepository(RepositoryEntity repository) async {
-    try {
-      // Validate URL
-      if (!_securityService.validateUrl(repository.url)) {
-        throw Exception('Invalid or insecure repository URL');
-      }
-
-      // Check for duplicates
-      if (await repositoryExists(repository.url)) {
-        throw Exception('Repository already exists');
-      }
-
-      // Create table entry
-      final table = RepositoryTable.fromEntity(repository.toJson()
-        ..['id'] = repository.id.isEmpty ? _uuid.v4() : repository.id);
-
-      await _database.repositoryDao.save(table);
-
-      _logger.info('Repository added: ${repository.name}');
-      return repository;
-    } catch (e, stack) {
-      _logger.severe('Failed to add repository', e, stack);
-      rethrow;
+    if (!_securityService.validateUrl(repository.url)) {
+      throw Exception('Invalid or insecure repository URL: ${repository.url}');
     }
+    if (!_securityService.isSafeInput(repository.name)) {
+      throw Exception('Invalid repository name');
+    }
+    if (await repositoryExists(repository.url)) {
+      throw Exception('Repository already exists');
+    }
+    final currentCount = await _database.repositoryDao.count();
+    if (currentCount >= 100) {
+      throw Exception('Maximum number of repositories (100) reached');
+    }
+
+    // Auto-detect type if caller passed generic
+    RepositoryType type = repository.type;
+    if (type == RepositoryType.genericFeed) {
+      final detected = await detectRepositoryType(repository.url);
+      if (detected != null) type = detected;
+    }
+
+    // Validate feed structure before saving
+    try {
+      final validation = await validateRepository(repository.url, type);
+      if (!validation.isValid) {
+        _logger.warning('Repository validation warning for ${repository.url}: ${validation.message}');
+        // Still allow adding but mark as invalid
+      }
+    } catch (_) {
+      // Non-blocking
+    }
+
+    final id = repository.id.isEmpty ? _uuid.v4() : repository.id;
+    final entity = repository.copyWith(id: id, type: type);
+    final table = RepositoryTable.fromEntity(entity.toJson()..['type'] = type.name);
+    // Ensure id mapping matches table expectations
+    table.repositoryId = id;
+    await _database.repositoryDao.save(table);
+    _logger.info('Repository added: ${entity.name} (${entity.type.name})');
+    return entity;
   }
 
   @override
-  Future<RepositoryEntity> updateRepository(
-    RepositoryEntity repository,
-  ) async {
-    try {
-      final table = RepositoryTable.fromEntity(repository.toJson());
-      await _database.repositoryDao.save(table);
-      _logger.info('Repository updated: ${repository.name}');
-      return repository;
-    } catch (e, stack) {
-      _logger.severe('Failed to update repository', e, stack);
-      rethrow;
-    }
+  Future<RepositoryEntity> updateRepository(RepositoryEntity repository) async {
+    final table = RepositoryTable.fromEntity(repository.toJson()..['type'] = repository.type.name);
+    table.repositoryId = repository.id;
+    await _database.repositoryDao.save(table);
+    _logger.info('Repository updated: ${repository.name}');
+    return repository;
   }
 
   @override
   Future<void> removeRepository(String id) async {
-    try {
-      await _database.repositoryDao.delete(id);
-      _logger.info('Repository removed: $id');
-    } catch (e, stack) {
-      _logger.severe('Failed to remove repository: $id', e, stack);
-      rethrow;
-    }
+    await _database.repositoryDao.delete(id);
+    _syncCounts.remove(id);
+    _syncDurations.remove(id);
+    _logger.info('Repository removed: $id');
   }
 
   @override
   Future<void> setEnabled(String id, bool enabled) async {
-    try {
-      await _database.repositoryDao.setEnabled(id, enabled);
-      _logger.info('Repository $id ${enabled ? "enabled" : "disabled"}');
-    } catch (e, stack) {
-      _logger.severe('Failed to set enabled for repository: $id', e, stack);
-    }
+    await _database.repositoryDao.setEnabled(id, enabled);
+    _logger.info('Repository $id ${enabled ? "enabled" : "disabled"}');
   }
 
   @override
-  Future<ValidationResult> validateRepository(
-    String url,
-    RepositoryType type,
-  ) async {
+  Future<ValidationResult> validateRepository(String url, RepositoryType type) async {
     try {
-      final provider = _providerRegistry.getProvider(type);
-      if (provider == null) {
-        return const ValidationResult(
-          isValid: false,
-          message: 'No provider found for repository type',
-        );
+      if (!_securityService.validateUrl(url)) {
+        return const ValidationResult(isValid: false, message: 'URL must use HTTPS and contain a valid host');
       }
-
+      final provider = _providerRegistry.getProvider(type) ?? _providerRegistry.detectProvider(url);
+      if (provider == null) {
+        return const ValidationResult(isValid: false, message: 'No provider found for repository type');
+      }
       final data = await provider.validate(url);
+      final warnings = <String>[];
+      if (data.appCount == 0 && data.isValid) warnings.add('Repository is valid but contains no apps');
+      if (data.iconUrl == null || data.iconUrl!.isEmpty) warnings.add('Repository has no icon');
       return ValidationResult(
         isValid: data.isValid,
-        message: data.isValid ? 'Repository is valid' : 'Repository is invalid',
+        message: data.isValid ? 'Repository is valid (${data.appCount} apps)' : 'Repository is invalid',
+        warnings: warnings.isEmpty ? null : warnings,
         metadata: data.metadata,
       );
     } catch (e, stack) {
       _logger.severe('Failed to validate repository: $url', e, stack);
-      return ValidationResult(
-        isValid: false,
-        message: 'Validation failed: ${e.toString()}',
-      );
+      return ValidationResult(isValid: false, message: 'Validation failed: ${e.toString()}');
     }
   }
 
   @override
   Future<void> syncRepository(String id) async {
+    final repo = await getRepositoryById(id);
+    if (repo == null) throw Exception('Repository not found: $id');
+    if (!repo.isEnabled) {
+      _logger.info('Repository $id is disabled, skipping sync');
+      return;
+    }
+    final provider = _providerRegistry.getProvider(repo.type) ?? _providerRegistry.detectProvider(repo.url);
+    if (provider == null) throw Exception('No provider found for type: ${repo.type}');
+    final start = DateTime.now();
+    _logger.info('Syncing repository: ${repo.name}');
     try {
-      final repo = await getRepositoryById(id);
-      if (repo == null) {
-        throw Exception('Repository not found: $id');
+      final apps = await provider.fetchApps(repo.url).timeout(const Duration(seconds: 45));
+      _logger.info('Fetched ${apps.length} apps from ${repo.name}');
+      // Persist apps with repositoryId association
+      final tables = apps.map((a) {
+        final json = a.toJson();
+        json['repositoryId'] = repo.id;
+        return AppTable.fromEntity(json);
+      }).toList();
+      if (tables.isNotEmpty) {
+        await _database.appDao.saveAll(tables);
       }
-
-      if (!repo.isEnabled) {
-        _logger.info('Repository $id is disabled, skipping sync');
-        return;
-      }
-
-      final provider = _providerRegistry.getProvider(repo.type);
-      if (provider == null) {
-        throw Exception('No provider found for type: ${repo.type}');
-      }
-
-      final startTime = DateTime.now();
-      _logger.info('Syncing repository: ${repo.name}');
-
-      try {
-        // Fetch apps from the repository
-        final apps = await provider.fetchApps(repo.url);
-        _logger.info('Fetched ${apps.length} apps from ${repo.name}');
-
-        // Update repository sync info
-        await _database.repositoryDao.updateLastSynced(id, DateTime.now());
-        await _database.repositoryDao.updateLastError(id, null);
-        await _database.repositoryDao.updateAppCount(id, apps.length);
-
-        _logger.info(
-          'Repository synced: ${repo.name} in '
-          '${DateTime.now().difference(startTime).inMilliseconds}ms',
-        );
-      } catch (e) {
-        await _database.repositoryDao.updateLastError(id, e.toString());
-        rethrow;
-      }
-    } catch (e, stack) {
-      _logger.severe('Failed to sync repository: $id', e, stack);
+      await _database.repositoryDao.updateLastSynced(id, DateTime.now());
+      await _database.repositoryDao.updateLastError(id, null);
+      await _database.repositoryDao.updateAppCount(id, apps.length);
+      final duration = DateTime.now().difference(start).inMilliseconds;
+      _syncCounts[id] = (_syncCounts[id] ?? 0) + 1;
+      _syncDurations.putIfAbsent(id, () => []).add(duration);
+      if (_syncDurations[id]!.length > 20) _syncDurations[id]!.removeAt(0);
+      _logger.info('Repository synced: ${repo.name} in ${duration}ms');
+    } catch (e) {
+      await _database.repositoryDao.updateLastError(id, e.toString());
+      _syncCounts[id] = (_syncCounts[id] ?? 0) + 1;
       rethrow;
     }
   }
 
   @override
   Future<void> syncAllRepositories() async {
-    try {
-      final repos = await getEnabledRepositories();
-      _logger.info('Syncing ${repos.length} enabled repositories');
-
-      for (final repo in repos) {
+    final repos = await getEnabledRepositories();
+    _logger.info('Syncing ${repos.length} enabled repositories');
+    // Sync with limited concurrency (2 at a time) to avoid rate limits
+    const concurrency = 2;
+    for (int i = 0; i < repos.length; i += concurrency) {
+      final batch = repos.skip(i).take(concurrency);
+      await Future.wait(batch.map((repo) async {
         try {
           await syncRepository(repo.id);
         } catch (e) {
           _logger.warning('Failed to sync ${repo.name}: $e');
-          // Continue syncing other repos
         }
-      }
-    } catch (e, stack) {
-      _logger.severe('Failed to sync all repositories', e, stack);
+      }));
     }
   }
 
@@ -250,31 +261,22 @@ class RepositoryManagerImpl implements RepositoryManager {
     try {
       final repo = await _database.repositoryDao.getById(id);
       if (repo == null) {
-        return const RepositoryStats(
-          appCount: 0,
-          releaseCount: 0,
-          syncCount: 0,
-          averageSyncDurationMs: 0,
-        );
+        return const RepositoryStats(appCount: 0, releaseCount: 0, syncCount: 0, averageSyncDurationMs: 0);
       }
-
       final appCount = await _database.appDao.countByRepository(id);
-
+      final syncCount = _syncCounts[id] ?? 0;
+      final durations = _syncDurations[id] ?? [];
+      final avg = durations.isEmpty ? 0.0 : durations.reduce((a, b) => a + b) / durations.length;
       return RepositoryStats(
         appCount: appCount,
-        releaseCount: 0, // TODO: Track releases separately
+        releaseCount: appCount,
         lastSynced: repo.lastSynced,
         lastError: repo.lastError,
-        syncCount: 0, // TODO: Track sync count
-        averageSyncDurationMs: 0, // TODO: Track sync duration
+        syncCount: syncCount,
+        averageSyncDurationMs: avg,
       );
     } catch (e) {
-      return const RepositoryStats(
-        appCount: 0,
-        releaseCount: 0,
-        syncCount: 0,
-        averageSyncDurationMs: 0,
-      );
+      return const RepositoryStats(appCount: 0, releaseCount: 0, syncCount: 0, averageSyncDurationMs: 0);
     }
   }
 

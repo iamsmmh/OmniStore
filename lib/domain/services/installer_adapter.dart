@@ -1,69 +1,86 @@
-/// Base interface for installer adapters
-/// Supports AltStore, SideStore, Feather, and future installers
+/// Base interface for installer adapters.
+/// Supports AltStore, SideStore, Feather, ESign, LiveContainer.
 abstract class InstallerAdapter {
-  /// Unique identifier for this installer
   String get id;
-
-  /// Display name
   String get name;
+  String get version;
+  String get supportedPlatform; // ios, android, all
 
-  /// Check if this installer is available on the device
   Future<bool> isAvailable();
 
-  /// Install an app from a file path
   Future<InstallResult> install({
     required String filePath,
     required String bundleId,
     Map<String, dynamic>? metadata,
   });
 
-  /// Uninstall an app
+  Future<InstallResult> update({
+    required String filePath,
+    required String bundleId,
+    required String currentVersion,
+    Map<String, dynamic>? metadata,
+  });
+
+  Future<InstallResult> reinstall({
+    required String filePath,
+    required String bundleId,
+    Map<String, dynamic>? metadata,
+  });
+
   Future<bool> uninstall(String bundleId);
 
-  /// Check if an app is installed
   Future<bool> isInstalled(String bundleId);
 
-  /// Get installed version of an app
   Future<String?> getInstalledVersion(String bundleId);
 
-  /// Get all installed apps managed by this installer
   Future<List<InstalledAppInfo>> getInstalledApps();
 
-  /// Check if this adapter supports the given file type
+  Future<bool> openApp(String bundleId);
+
   bool supportsFileType(String extension);
+
+  /// Whether this adapter should appear in UI on current platform.
+  bool get isSupportedOnCurrentPlatform;
 }
 
-/// Result of an install operation
+/// Result of an install/update/reinstall operation.
 class InstallResult {
   final bool success;
   final String? bundleId;
   final String? version;
   final String? error;
+  final InstallErrorCode? errorCode;
 
   const InstallResult({
     required this.success,
     this.bundleId,
     this.version,
     this.error,
+    this.errorCode,
   });
 
   factory InstallResult.success({
     required String bundleId,
     required String version,
   }) =>
-      InstallResult(
-        success: true,
-        bundleId: bundleId,
-        version: version,
-      );
+      InstallResult(success: true, bundleId: bundleId, version: version);
 
-  factory InstallResult.failure(String error) => InstallResult(
-        success: false,
-        error: error,
-      );
+  factory InstallResult.failure(String error, {InstallErrorCode? code}) =>
+      InstallResult(success: false, error: error, errorCode: code);
 }
 
-/// Info about an installed app
+enum InstallErrorCode {
+  installerNotFound,
+  fileNotFound,
+  invalidPackage,
+  incompatibleOs,
+  insufficientStorage,
+  networkError,
+  cancelled,
+  unknown,
+}
+
+/// Info about an installed app.
 class InstalledAppInfo {
   final String bundleId;
   final String name;
@@ -80,11 +97,12 @@ class InstalledAppInfo {
   });
 }
 
-/// Registry for installer adapters
+/// Registry for installer adapters.
 class InstallerAdapterRegistry {
   final List<InstallerAdapter> _adapters = [];
 
   void register(InstallerAdapter adapter) {
+    if (_adapters.any((a) => a.id == adapter.id)) return;
     _adapters.add(adapter);
   }
 
@@ -95,11 +113,19 @@ class InstallerAdapterRegistry {
   Future<List<InstallerAdapter>> getAvailableAdapters() async {
     final available = <InstallerAdapter>[];
     for (final adapter in _adapters) {
-      if (await adapter.isAvailable()) {
-        available.add(adapter);
-      }
+      if (!adapter.isSupportedOnCurrentPlatform) continue;
+      try {
+        if (await adapter.isAvailable()) {
+          available.add(adapter);
+        }
+      } catch (_) {}
     }
     return available;
+  }
+
+  /// Adapters that are supported on current platform regardless of installed state.
+  List<InstallerAdapter> getSupportedAdapters() {
+    return _adapters.where((a) => a.isSupportedOnCurrentPlatform).toList();
   }
 
   InstallerAdapter? getAdapter(String id) {

@@ -1,153 +1,163 @@
 import 'dart:async';
+import 'dart:collection';
+import 'package:logging/logging.dart';
+
 import '../../core/logger/app_logger.dart';
 import '../../domain/models/app_entity.dart';
 import '../../domain/repositories/app_repository.dart';
 
-/// Search service with indexing and caching
+/// Search service with bounded caching, debouncing and deduplication.
 class SearchService {
   final AppRepository _appRepository;
   final _logger = AppLogger.getLogger('SearchService');
 
-  // Search cache
-  final Map<String, List<AppSummary>> _searchCache = {};
-  final List<String> _recentSearches = [];
+  // Bounded LRU cache — prevents unbounded growth noted in F-11.
+  final LinkedHashMap<String, List<AppSummary>> _searchCache = LinkedHashMap();
+  static const int _maxCacheEntries = 80;
   static const int _maxRecentSearches = 20;
+  final List<String> _recentSearches = [];
 
-  // Debounce timer
   Timer? _debounceTimer;
-  final Duration _debounceDuration = const Duration(milliseconds: 300);
+  Completer<List<AppSummary>>? _pendingCompleter;
+  final Duration _debounceDuration = const Duration(milliseconds: 280);
+
+  // Invalidation token — incremented on sync so stale entries aren't served.
+  int _cacheGeneration = 0;
+  DateTime? _lastSyncInvalidation;
 
   SearchService({required AppRepository appRepository})
       : _appRepository = appRepository;
 
-  /// Recent searches list
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
 
-  /// Search apps with debouncing
+  /// Call when catalog data changes to prevent stale results.
+  void invalidateCache() {
+    _searchCache.clear();
+    _cacheGeneration++;
+    _lastSyncInvalidation = DateTime.now();
+  }
+
   Future<List<AppSummary>> search(
     String query, {
     bool addToRecent = true,
     String? category,
     String? repositoryId,
   }) async {
-    if (query.trim().isEmpty) return [];
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+    if (trimmed.length > 200) return [];
 
-    // Check cache first
-    final cacheKey = _buildCacheKey(query, category, repositoryId);
-    if (_searchCache.containsKey(cacheKey)) {
-      return _searchCache[cacheKey]!;
+    final cacheKey = _buildCacheKey(trimmed, category, repositoryId);
+    final cached = _searchCache[cacheKey];
+    if (cached != null) {
+      // Move to end for LRU ordering
+      _searchCache.remove(cacheKey);
+      _searchCache[cacheKey] = cached;
+      if (addToRecent) _addRecentSearch(trimmed);
+      return cached;
     }
 
-    // Perform search
     try {
       final results = await _appRepository.searchApps(
-        query,
+        trimmed,
         category: category,
         repositoryId: repositoryId,
       );
-
-      // Cache results
-      _searchCache[cacheKey] = results;
-
-      // Add to recent searches
-      if (addToRecent) {
-        _addRecentSearch(query);
-      }
-
+      _putCache(cacheKey, results);
+      if (addToRecent) _addRecentSearch(trimmed);
       return results;
     } catch (e, stack) {
-      _logger.severe('Search failed: $query', e, stack);
+      _logger.severe('Search failed: $trimmed', e, stack);
       return [];
     }
   }
 
-  /// Search with debounce (for live search)
+  /// Debounced search for live typing. Cancels previous pending future
+  /// and completes it with empty list instead of hanging forever (F-06 fix).
   Future<List<AppSummary>> searchDebounced(
     String query, {
     String? category,
     String? repositoryId,
   }) async {
     _debounceTimer?.cancel();
-
+    // Complete previous pending with empty to avoid leak
+    if (_pendingCompleter != null && !_pendingCompleter!.isCompleted) {
+      _pendingCompleter!.complete([]);
+    }
     final completer = Completer<List<AppSummary>>();
+    _pendingCompleter = completer;
 
     _debounceTimer = Timer(_debounceDuration, () async {
-      final results = await search(
-        query,
-        addToRecent: false,
-        category: category,
-        repositoryId: repositoryId,
-      );
-      completer.complete(results);
+      try {
+        final results = await search(
+          query,
+          addToRecent: false,
+          category: category,
+          repositoryId: repositoryId,
+        );
+        if (!completer.isCompleted) completer.complete(results);
+      } catch (e) {
+        if (!completer.isCompleted) completer.complete([]);
+      }
     });
 
     return completer.future;
   }
 
-  /// Get search suggestions based on query
   Future<List<String>> getSuggestions(String query) async {
-    if (query.trim().isEmpty) return [];
-
-    final results = await _appRepository.searchApps(query, pageSize: 5);
-    final suggestions = <String>{};
-
-    // Add app names
-    for (final app in results) {
-      if (app.name.toLowerCase().contains(query.toLowerCase())) {
-        suggestions.add(app.name);
-      }
-    }
-
-    // Add developer names
-    for (final app in results) {
-      if (app.developer.toLowerCase().contains(query.toLowerCase())) {
-        suggestions.add(app.developer);
-      }
-    }
-
-    // Add category names
-    for (final app in results) {
-      for (final cat in app.categories) {
-        if (cat.toLowerCase().contains(query.toLowerCase())) {
-          suggestions.add(cat);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+    if (trimmed.length > 100) return [];
+    try {
+      final results = await _appRepository.searchApps(trimmed, pageSize: 8);
+      final suggestions = <String>{};
+      final lower = trimmed.toLowerCase();
+      for (final app in results) {
+        if (app.name.toLowerCase().contains(lower)) suggestions.add(app.name);
+        if (app.developer.toLowerCase().contains(lower)) suggestions.add(app.developer);
+        for (final cat in app.categories) {
+          if (cat.toLowerCase().contains(lower)) suggestions.add(cat);
         }
+        if (suggestions.length >= 10) break;
       }
+      return suggestions.take(10).toList();
+    } catch (e) {
+      return [];
     }
-
-    return suggestions.toList().take(10).toList();
   }
 
-  /// Add to recent searches
   void _addRecentSearch(String query) {
     _recentSearches.remove(query);
     _recentSearches.insert(0, query);
-
     if (_recentSearches.length > _maxRecentSearches) {
       _recentSearches.removeLast();
     }
   }
 
-  /// Clear recent searches
   void clearRecentSearches() {
     _recentSearches.clear();
   }
 
-  /// Clear search cache
   void clearCache() {
     _searchCache.clear();
   }
 
-  /// Build cache key
-  String _buildCacheKey(
-    String query,
-    String? category,
-    String? repositoryId,
-  ) {
-    return '${query.toLowerCase()}|${category ?? ""}|${repositoryId ?? ""}';
+  void _putCache(String key, List<AppSummary> value) {
+    if (_searchCache.length >= _maxCacheEntries) {
+      // Remove oldest entry
+      _searchCache.remove(_searchCache.keys.first);
+    }
+    _searchCache[key] = value;
   }
 
-  /// Dispose resources
+  String _buildCacheKey(String query, String? category, String? repositoryId) {
+    return '${query.toLowerCase()}|${category ?? ""}|${repositoryId ?? ""}|$_cacheGeneration';
+  }
+
   void dispose() {
     _debounceTimer?.cancel();
+    if (_pendingCompleter != null && !_pendingCompleter!.isCompleted) {
+      _pendingCompleter!.complete([]);
+    }
   }
 }

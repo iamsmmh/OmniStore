@@ -21,7 +21,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
   final Map<String, CancelToken> _activeDownloads = {};
 
   DownloadRepositoryImpl({
-    required Isar database,
+    required dynamic database,
     required HttpClient httpClient,
   })  : _database = DatabaseService(database),
         _httpClient = httpClient;

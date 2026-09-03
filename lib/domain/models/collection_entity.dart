@@ -1,70 +1,98 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:equatable/equatable.dart';
 
-part 'collection_entity.freezed.dart';
-part 'collection_entity.g.dart';
+class CollectionEntity extends Equatable {
+  final String id;
+  final String name;
+  final String icon;
+  final String color;
+  final List<String> appIds;
+  final DateTime createdAt;
+  final String? description;
+  final DateTime? updatedAt;
+  final bool? isSystem;
 
-/// Collection entity for organizing apps
-@freezed
-class CollectionEntity with _$CollectionEntity {
-  const factory CollectionEntity({
-    required String id,
-    required String name,
-    required String icon,
-    required String color,
-    required List<String> appIds,
-    DateTime? createdAt,
-    String? description,
-    DateTime? updatedAt,
-    bool? isSystem,
-  }) = _CollectionEntity;
+  const CollectionEntity({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.appIds,
+    required this.createdAt,
+    this.description,
+    this.updatedAt,
+    this.isSystem,
+  });
 
-  factory CollectionEntity.fromJson(Map<String, dynamic> json) =>
-      _$CollectionEntityFromJson(json);
+  factory CollectionEntity.fromJson(Map<String, dynamic> json) => CollectionEntity(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        icon: json['icon'] as String,
+        color: json['color'] as String,
+        appIds: List<String>.from(json['appIds'] as List? ?? []),
+        createdAt: json['createdAt'] is String ? DateTime.parse(json['createdAt'] as String) : json['createdAt'] as DateTime,
+        description: json['description'] as String?,
+        updatedAt: json['updatedAt'] == null ? null : (json['updatedAt'] is String ? DateTime.tryParse(json['updatedAt'] as String) : json['updatedAt'] as DateTime?),
+        isSystem: json['isSystem'] as bool?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'icon': icon,
+        'color': color,
+        'appIds': appIds,
+        'createdAt': createdAt.toIso8601String(),
+        'description': description,
+        'updatedAt': updatedAt?.toIso8601String(),
+        'isSystem': isSystem,
+      };
+
+  @override
+  List<Object?> get props => [id, name];
 }
 
-/// Default collections
 class DefaultCollections {
   DefaultCollections._();
 
-  static const music = CollectionEntity(
+  static final music = CollectionEntity(
     id: 'music',
     name: 'Music',
     icon: 'music_note',
     color: '#E91E63',
-    appIds: [],
-    createdAt: null,
+    appIds: const [],
+    createdAt: DateTime(2024, 1, 1),
     isSystem: true,
   );
 
-  static const productivity = CollectionEntity(
+  static final productivity = CollectionEntity(
     id: 'productivity',
     name: 'Productivity',
     icon: 'work',
     color: '#2196F3',
-    appIds: [],
-    createdAt: null,
+    appIds: const [],
+    createdAt: DateTime(2024, 1, 1),
     isSystem: true,
   );
 
-  static const social = CollectionEntity(
+  static final social = CollectionEntity(
     id: 'social',
     name: 'Social',
     icon: 'people',
     color: '#4CAF50',
-    appIds: [],
-    createdAt: null,
+    appIds: const [],
+    createdAt: DateTime(2024, 1, 1),
     isSystem: true,
   );
 
-  static const development = CollectionEntity(
+  static final development = CollectionEntity(
     id: 'development',
     name: 'Development',
     icon: 'code',
     color: '#FF9800',
-    appIds: [],
-    createdAt: null,
+    appIds: const [],
+    createdAt: DateTime(2024, 1, 1),
     isSystem: true,
   );
 
-  static const all = [music, productivity, social, development];
+  static List<CollectionEntity> get all => [music, productivity, social, development];
 }

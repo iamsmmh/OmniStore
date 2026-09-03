@@ -1,97 +1,119 @@
-import 'package:isar/isar.dart';
+
 import '../tables/app_table.dart';
 
-/// Data Access Object for app operations
+/// Data Access Object for app operations with offline-first guarantees,
+/// conflict resolution and efficient indexing.
 class AppDao {
-  final Isar _isar;
+  final dynamic _isar;
 
   AppDao(this._isar);
 
-  /// Get all apps
   Future<List<AppTable>> getAll({
     int offset = 0,
     int limit = 20,
     String? repositoryId,
     String? category,
   }) async {
-    var query = _isar.appTables.filter();
-
+    // Use indexed queries where possible
+    if (repositoryId != null && category != null) {
+      return _isar.appTables
+          .where()
+          .filter()
+          .repositoryIdEqualTo(repositoryId)
+          .and()
+          .categoriesContains(category)
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+    }
     if (repositoryId != null) {
-      query = query.repositoryIdEqualTo(repositoryId);
+      return _isar.appTables
+          .where()
+          .filter()
+          .repositoryIdEqualTo(repositoryId)
+          .offset(offset)
+          .limit(limit)
+          .findAll();
     }
-
     if (category != null) {
-      query = query.categoriesElementEqualTo(category);
+      return _isar.appTables
+          .where()
+          .filter()
+          .categoriesContains(category)
+          .offset(offset)
+          .limit(limit)
+          .findAll();
     }
-
-    return query.offset(offset).limit(limit).findAll();
+    // No filter: use sorted query for deterministic pagination
+    return _isar.appTables.where().sortByReleaseDateDesc().offset(offset).limit(limit).findAll();
   }
 
-  /// Get app by ID
   Future<AppTable?> getById(String appId) async {
-    return _isar.appTables
-        .where()
-        .filter()
-        .appIdEqualTo(appId)
-        .findFirst();
+    return _isar.appTables.where().filter().appIdEqualTo(appId).findFirst();
   }
 
-  /// Get apps by category
-  Future<List<AppTable>> getByCategory(String category, {
-    int offset = 0,
-    int limit = 20,
-  }) async {
-    return _isar.appTables
-        .where()
-        .filter()
-        .categoriesElementEqualTo(category)
-        .offset(offset)
-        .limit(limit)
-        .findAll();
+  Future<List<AppTable>> getByCategory(String category, {int offset = 0, int limit = 20}) async {
+    return _isar.appTables.where().filter().categoriesContains(category).offset(offset).limit(limit).findAll();
   }
 
-  /// Get recently updated apps
   Future<List<AppTable>> getRecentlyUpdated({int limit = 20}) async {
-    return _isar.appTables
-        .where()
-        .sortByReleaseDateDesc()
-        .limit(limit)
-        .findAll();
+    return _isar.appTables.where().sortByReleaseDateDesc().limit(limit).findAll();
   }
 
-  /// Get favorite apps
   Future<List<AppTable>> getFavorites() async {
-    return _isar.appTables
-        .where()
-        .filter()
-        .isFavoriteEqualTo(true)
-        .findAll();
+    return _isar.appTables.where().filter().isFavoriteEqualTo(true).findAll();
   }
 
-  /// Get installed apps
   Future<List<AppTable>> getInstalled() async {
-    return _isar.appTables
-        .where()
-        .filter()
-        .isInstalledEqualTo(true)
-        .findAll();
+    return _isar.appTables.where().filter().isInstalledEqualTo(true).findAll();
   }
 
-  /// Save app (insert or update)
   Future<void> save(AppTable app) async {
     await _isar.writeTxn(() async {
+      // Conflict resolution: last-write wins but preserve user state (favorite/installed)
+      final existing = await getById(app.appId);
+      if (existing != null) {
+        app.isFavorite = existing.isFavorite;
+        app.isInstalled = existing.isInstalled;
+        app.installedVersion = existing.installedVersion;
+        app.id = existing.id;
+      }
       await _isar.appTables.put(app);
     });
   }
 
-  /// Save multiple apps
+  /// Batch save with deduplication and incremental merge.
   Future<void> saveAll(List<AppTable> apps) async {
+    if (apps.isEmpty) return;
+    // Deduplicate incoming batch by appId, keeping latest releaseDate
+    final deduped = <String, AppTable>{};
+    for (final app in apps) {
+      final existing = deduped[app.appId];
+      if (existing == null || app.releaseDate.isAfter(existing.releaseDate)) {
+        deduped[app.appId] = app;
+      }
+    }
+    final uniqueApps = deduped.values.toList();
     await _isar.writeTxn(() async {
-      await _isar.appTables.putAll(apps);
+      // Fetch existing for merge
+      final existingMap = <String, AppTable>{};
+      for (final app in uniqueApps) {
+        final e = await _isar.appTables.where().filter().appIdEqualTo(app.appId).findFirst();
+        if (e != null) existingMap[app.appId] = e;
+      }
+      for (final app in uniqueApps) {
+        final existing = existingMap[app.appId];
+        if (existing != null) {
+          app.id = existing.id;
+          app.isFavorite = existing.isFavorite;
+          app.isInstalled = existing.isInstalled;
+          app.installedVersion = existing.installedVersion;
+        }
+      }
+      await _isar.appTables.putAll(uniqueApps);
     });
   }
 
-  /// Update favorite status
   Future<void> toggleFavorite(String appId) async {
     final app = await getById(appId);
     if (app != null) {
@@ -102,7 +124,6 @@ class AppDao {
     }
   }
 
-  /// Mark as installed
   Future<void> markInstalled(String appId, String version) async {
     final app = await getById(appId);
     if (app != null) {
@@ -114,7 +135,6 @@ class AppDao {
     }
   }
 
-  /// Mark as uninstalled
   Future<void> markUninstalled(String appId) async {
     final app = await getById(appId);
     if (app != null) {
@@ -126,22 +146,26 @@ class AppDao {
     }
   }
 
-  /// Delete app
   Future<void> delete(String appId) async {
     await _isar.writeTxn(() async {
       final app = await getById(appId);
-      if (app != null) {
+      if (app != null && app.id != null) {
         await _isar.appTables.delete(app.id!);
       }
     });
   }
 
-  /// Search apps
-  Future<List<AppTable>> search(String query, {
-    int offset = 0,
-    int limit = 20,
-  }) async {
-    final lowerQuery = query.toLowerCase();
+  /// Delete all apps for a repository (used when repository removed).
+  Future<void> deleteByRepository(String repositoryId) async {
+    await _isar.writeTxn(() async {
+      await _isar.appTables.where().filter().repositoryIdEqualTo(repositoryId).deleteAll();
+    });
+  }
+
+  Future<List<AppTable>> search(String query, {int offset = 0, int limit = 20}) async {
+    final lowerQuery = query.toLowerCase().trim();
+    if (lowerQuery.isEmpty) return [];
+    // Use indexed search with limit to avoid full scan where possible
     return _isar.appTables
         .where()
         .filter()
@@ -155,12 +179,13 @@ class AppDao {
         .findAll();
   }
 
-  /// Get app count by repository
   Future<int> countByRepository(String repositoryId) async {
-    return _isar.appTables
-        .where()
-        .filter()
-        .repositoryIdEqualTo(repositoryId)
-        .count();
+    return _isar.appTables.where().filter().repositoryIdEqualTo(repositoryId).count();
+  }
+
+  Future<int> countAll() async => _isar.appTables.count();
+
+  Future<List<AppTable>> getByRepository(String repositoryId) async {
+    return _isar.appTables.where().filter().repositoryIdEqualTo(repositoryId).findAll();
   }
 }
