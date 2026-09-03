@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:logging/logging.dart';
 import '../logger/app_logger.dart';
 import '../versioning/semantic_version.dart';
 

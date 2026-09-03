@@ -134,7 +134,10 @@ class GenericJsonProvider implements RepositoryProvider {
           map['downloadUrl'] as String? ??
           map['url'] as String? ??
           map['download_url'] as String?;
-      final size = latest?['size'] as int? ?? map['size'] as int? ?? map['downloadSize'] as int? ?? 0;
+      final rawSize = latest?['size'] ?? map['size'] ?? map['downloadSize'];
+      final size = rawSize is int
+          ? rawSize
+          : int.tryParse(rawSize?.toString() ?? '') ?? 0;
       final dateStr = latest?['date'] as String? ?? map['releaseDate'] as String? ?? map['date'] as String? ?? map['updatedAt'] as String?;
       final icon = map['iconURL'] as String? ?? map['iconUrl'] as String? ?? map['icon'] as String? ?? '';
 

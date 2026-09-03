@@ -195,7 +195,7 @@ class ApiClient {
     DateTime since,
   ) async {
     try {
-      final response = await _httpClient.get(
+      final response = await _httpClient.get<dynamic>(
         url,
         queryParameters: {'since': since.toIso8601String()},
       );
@@ -260,7 +260,7 @@ class ApiClient {
     );
 
     try {
-      final response = await _httpClient.get(
+      final response = await _httpClient.get<dynamic>(
         url,
         queryParameters: queryParameters,
         options: options,
