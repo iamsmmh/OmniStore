@@ -35,7 +35,7 @@ class ApiClient {
     int perPage = 30,
     int page = 1,
   }) async {
-    final response = await _httpClient.get(
+    final response = await _httpClient.get<dynamic>(
       'https://api.github.com/repos/$owner/$repo/releases',
       queryParameters: {'per_page': perPage, 'page': page},
       options: Options(headers: {'Accept': 'application/vnd.github.v3+json'}),
@@ -48,7 +48,7 @@ class ApiClient {
   // ─── GitLab API ──────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getGitLabProject(String projectId) async {
-    final response = await _httpClient.get(
+    final response = await _httpClient.get<dynamic>(
       'https://gitlab.com/api/v4/projects/$projectId',
     );
     return response.data as Map<String, dynamic>;
@@ -59,7 +59,7 @@ class ApiClient {
     int perPage = 30,
     int page = 1,
   }) async {
-    final response = await _httpClient.get(
+    final response = await _httpClient.get<dynamic>(
       'https://gitlab.com/api/v4/projects/$projectId/releases',
       queryParameters: {'per_page': perPage, 'page': page},
     );
@@ -72,7 +72,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>?> getAltStoreSource(String url) async {
     try {
-      final response = await _httpClient.get(url);
+      final response = await _httpClient.get<dynamic>(url);
       return response.data as Map<String, dynamic>?;
     } catch (e) {
       _logger.severe('Failed to fetch AltStore source', e);
@@ -84,7 +84,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>?> getOmniSourceFeed(String url) async {
     try {
-      final response = await _httpClient.get(url);
+      final response = await _httpClient.get<dynamic>(url);
       return response.data as Map<String, dynamic>?;
     } catch (e) {
       _logger.severe('Failed to fetch OmniSource feed', e);
@@ -97,7 +97,7 @@ class ApiClient {
     DateTime since,
   ) async {
     try {
-      final response = await _httpClient.get(
+      final response = await _httpClient.get<dynamic>(
         url,
         queryParameters: {'since': since.toIso8601String()},
       );
@@ -112,7 +112,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>?> getFeatherSource(String url) async {
     try {
-      final response = await _httpClient.get(url);
+      final response = await _httpClient.get<dynamic>(url);
       return response.data as Map<String, dynamic>?;
     } catch (e) {
       _logger.severe('Failed to fetch Feather source', e);
@@ -124,7 +124,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>?> getGenericFeed(String url) async {
     try {
-      final response = await _httpClient.get(url);
+      final response = await _httpClient.get<dynamic>(url);
       return response.data as Map<String, dynamic>?;
     } catch (e) {
       _logger.severe('Failed to fetch generic feed', e);
