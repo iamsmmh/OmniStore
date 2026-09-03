@@ -14,7 +14,7 @@ class AppRepositoryImpl implements AppRepository {
   final _logger = AppLogger.getLogger('AppRepositoryImpl');
 
   AppRepositoryImpl({
-    required Isar database,
+    required dynamic database,
     required ApiClient apiClient,
   })  : _database = DatabaseService(database),
         _apiClient = apiClient;

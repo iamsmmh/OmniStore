@@ -1,4 +1,5 @@
 import 'dart:math';
+import '../versioning/semantic_version.dart';
 
 /// Utility functions for OmniStore
 class AppUtils {
@@ -11,22 +12,30 @@ class AppUtils {
     return values.map((v) => v.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// Compare two version strings
+  /// Compare two version strings using semantic versioning.
   /// Returns: -1 if v1 < v2, 0 if equal, 1 if v1 > v2
   static int compareVersions(String v1, String v2) {
-    final parts1 = v1.split('.').map((p) => int.tryParse(p) ?? 0).toList();
-    final parts2 = v2.split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    final a = SemanticVersion.tryParse(v1);
+    final b = SemanticVersion.tryParse(v2);
+    if (a != null && b != null) {
+      return a.compareTo(b);
+    }
+    // Fallback to lenient numeric comparison for unparseable tags
+    return _fallbackCompare(v1, v2);
+  }
 
+  static int _fallbackCompare(String v1, String v2) {
+    // Strip leading v and build metadata
+    String norm(String v) => v.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '').split('+').first;
+    final parts1 = norm(v1).split(RegExp(r'[.\-_]')).map((p) => int.tryParse(p) ?? 0).toList();
+    final parts2 = norm(v2).split(RegExp(r'[.\-_]')).map((p) => int.tryParse(p) ?? 0).toList();
     final maxLength = max(parts1.length, parts2.length);
-
     for (int i = 0; i < maxLength; i++) {
       final p1 = i < parts1.length ? parts1[i] : 0;
       final p2 = i < parts2.length ? parts2[i] : 0;
-
       if (p1 < p2) return -1;
       if (p1 > p2) return 1;
     }
-
     return 0;
   }
 
@@ -49,9 +58,20 @@ class AppUtils {
     return '${text.substring(0, maxLength)}...';
   }
 
-  /// Sanitize filename
+  /// Sanitize filename for safe filesystem usage
   static String sanitizeFilename(String filename) {
-    return filename.replaceAll(RegExp(r'[^\w\s.-]'), '_');
+    var sanitized = filename.replaceAll(RegExp(r'[^\w\s.-]'), '_');
+    sanitized = sanitized.replaceAll(RegExp(r'\s+'), '_');
+    // Prevent directory traversal and hidden files
+    sanitized = sanitized.replaceAll('..', '_');
+    if (sanitized.startsWith('.')) sanitized = '_$sanitized';
+    if (sanitized.isEmpty) return 'file';
+    if (sanitized.length > 120) {
+      final ext = sanitized.contains('.') ? sanitized.split('.').last : '';
+      final base = sanitized.substring(0, 100);
+      return ext.isNotEmpty && ext.length < 10 ? '$base.$ext' : base;
+    }
+    return sanitized;
   }
 
   /// Get file extension from URL
@@ -61,6 +81,27 @@ class AppUtils {
     final path = uri.path;
     final lastDot = path.lastIndexOf('.');
     if (lastDot == -1) return '';
-    return path.substring(lastDot + 1).toLowerCase();
+    final ext = path.substring(lastDot + 1).toLowerCase();
+    // Strip query-like chars that may have been encoded in path
+    return ext.split(RegExp(r'[^a-z0-9]')).first;
+  }
+
+  /// Sanitize and validate a URL string for safe usage
+  static String? sanitizeUrl(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) return null;
+    if (uri.scheme != 'https' && uri.scheme != 'http') return null;
+    if (uri.host.isEmpty) return null;
+    // Block private/local addresses
+    final host = uri.host.toLowerCase();
+    if (host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '::1' ||
+        host.startsWith('10.') ||
+        host.startsWith('192.168.') ||
+        host.startsWith('172.')) {
+      return null;
+    }
+    return uri.toString();
   }
 }

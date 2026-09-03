@@ -1,9 +1,9 @@
-import 'package:isar/isar.dart';
+
 import '../tables/repository_table.dart';
 
 /// Data Access Object for repository operations
 class RepositoryDao {
-  final Isar _isar;
+  final dynamic _isar;
 
   RepositoryDao(this._isar);
 

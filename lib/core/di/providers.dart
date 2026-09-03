@@ -26,9 +26,14 @@ import '../../data/services/discovery_service.dart';
 import '../../data/services/repository_catalog_source.dart';
 import '../../domain/community/community_contracts.dart';
 import '../../domain/health/app_health.dart';
+import '../../domain/health/health_engine.dart';
 import '../../domain/security/trust_analyzer.dart';
+import '../../domain/security/trust_engine.dart';
 import '../../domain/updates/update_intelligence.dart';
+import '../../domain/compatibility/compatibility_engine.dart';
+import '../../domain/validation/repository_validator.dart';
 import '../../infrastructure/sync/sync_scheduler.dart';
+import '../monitoring/monitoring_service.dart';
 
 // ─── Theme Providers ─────────────────────────────────────────
 
@@ -60,10 +65,16 @@ final secureStorageProvider = Provider<SecureStorage>((ref) {
   return SecureStorage();
 });
 
+// ─── Monitoring ──────────────────────────────────────────────
+
+final monitoringServiceProvider = Provider<MonitoringService>((ref) {
+  return MonitoringService();
+});
+
 // ─── Database Provider (resolved) ────────────────────────────
 
 /// Provides the Isar instance (blocks until database is ready)
-final isarProvider = Provider<Isar>((ref) {
+final isarProvider = Provider<dynamic>((ref) {
   final asyncIsar = ref.watch(databaseProvider);
   return asyncIsar.requireValue;
 });
@@ -114,10 +125,12 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   final repositoryManager = ref.watch(repositoryManagerProvider);
   final appRepository = ref.watch(appRepositoryProvider);
   final notificationService = ref.watch(notificationServiceProvider);
+  final monitoring = ref.watch(monitoringServiceProvider);
   return SyncEngine(
     repositoryManager: repositoryManager,
     appRepository: appRepository,
     notificationService: notificationService,
+    monitoringService: monitoring,
   );
 });
 
@@ -158,12 +171,32 @@ final trustAnalyzerProvider = Provider<TrustAnalyzer>((ref) {
   return const TrustAnalyzer();
 });
 
+final trustEngineProvider = Provider<TrustEngine>((ref) {
+  return TrustEngine(analyzer: ref.watch(trustAnalyzerProvider));
+});
+
 final appHealthAnalyzerProvider = Provider<AppHealthAnalyzer>((ref) {
   return const AppHealthAnalyzer();
 });
 
+final healthEngineProvider = Provider<HealthEngine>((ref) {
+  return HealthEngine(analyzer: ref.watch(appHealthAnalyzerProvider));
+});
+
+final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) {
+  return const CompatibilityEngine();
+});
+
 final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
   return SyncScheduler();
+});
+
+final repositoryValidatorProvider = Provider<RepositoryValidator>((ref) {
+  final manager = ref.watch(repositoryManagerProvider) as RepositoryManagerImpl;
+  return RepositoryValidator(
+    securityService: ref.watch(securityServiceProvider),
+    registry: manager.providerRegistry,
+  );
 });
 
 /// Community features are disabled until a moderated backend exists.
