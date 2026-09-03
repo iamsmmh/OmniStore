@@ -84,6 +84,23 @@ class RepositoryTrustInput {
   /// Explicitly verified by the user or by an OmniSource verification record.
   final bool isPubliclyVerified;
 
+  // ── Extended trust signals for spec compliance ──
+
+  /// Age of repository since first seen/added, in days.
+  final int repositoryAgeDays;
+
+  /// Maintainer activity: fraction of months with releases in last 12 months (0–1).
+  final double maintainerActivityScore;
+
+  /// Fraction of releases that are cryptographically signed (0–1).
+  final double signedReleaseRatio;
+
+  /// Community adoption: normalized popularity (0–1) based on stars, installs, or catalog popularity.
+  final double communityAdoptionScore;
+
+  /// Total number of releases observed (for consistency checks).
+  final int totalReleases;
+
   const RepositoryTrustInput({
     required this.repositoryId,
     required this.url,
@@ -96,6 +113,11 @@ class RepositoryTrustInput {
     this.consecutiveSyncFailures = 0,
     this.brokenAssetCount = 0,
     this.isPubliclyVerified = false,
+    this.repositoryAgeDays = 0,
+    this.maintainerActivityScore = 0,
+    this.signedReleaseRatio = 0,
+    this.communityAdoptionScore = 0,
+    this.totalReleases = 0,
   });
 }
 
@@ -266,6 +288,120 @@ class TrustAnalyzer {
         severity: TrustSeverity.info,
       ));
       score += 5;
+    }
+
+    // Repository age: established repos are more trusted, very new ones get a small penalty
+    if (input.repositoryAgeDays > 0) {
+      if (input.repositoryAgeDays < 14) {
+        findings.add(const TrustFinding(
+          code: 'very_new_repository',
+          title: 'Very new repository',
+          detail: 'This repository was added less than 2 weeks ago; it has limited track record.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 8;
+      } else if (input.repositoryAgeDays < 60) {
+        findings.add(const TrustFinding(
+          code: 'new_repository',
+          title: 'New repository',
+          detail: 'This repository is less than 2 months old.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 4;
+      } else if (input.repositoryAgeDays > 365) {
+        findings.add(const TrustFinding(
+          code: 'established_repository',
+          title: 'Established repository',
+          detail: 'This repository has been available for over a year.',
+          severity: TrustSeverity.info,
+        ));
+        score += 4;
+      }
+    }
+
+    // Maintainer activity: fraction of active months
+    if (input.maintainerActivityScore > 0) {
+      if (input.maintainerActivityScore < 0.2) {
+        findings.add(TrustFinding(
+          code: 'low_maintainer_activity',
+          title: 'Low maintainer activity',
+          detail: 'Only ${(input.maintainerActivityScore * 100).round()}% of recent months had releases.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 6;
+      } else if (input.maintainerActivityScore > 0.7) {
+        findings.add(const TrustFinding(
+          code: 'active_maintainer',
+          title: 'Active maintainer',
+          detail: 'Releases are published regularly.',
+          severity: TrustSeverity.info,
+        ));
+        score += 3;
+      }
+    }
+
+    // Signed releases: cryptographic signatures boost trust
+    if (input.signedReleaseRatio > 0) {
+      if (input.signedReleaseRatio >= 0.9) {
+        findings.add(const TrustFinding(
+          code: 'signed_releases',
+          title: 'Releases are signed',
+          detail: 'Most releases include a cryptographic signature that can be verified.',
+          severity: TrustSeverity.info,
+        ));
+        score += 6;
+      } else if (input.signedReleaseRatio >= 0.5) {
+        findings.add(TrustFinding(
+          code: 'partially_signed',
+          title: '${(input.signedReleaseRatio * 100).round()}% of releases are signed',
+          detail: 'Some releases are signed; prefer signed ones.',
+          severity: TrustSeverity.low,
+        ));
+        score += 2;
+      } else if (input.signedReleaseRatio > 0 && input.signedReleaseRatio < 0.2 && input.totalReleases > 5) {
+        findings.add(const TrustFinding(
+          code: 'rarely_signed',
+          title: 'Releases are rarely signed',
+          detail: 'Very few releases include a signature.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 2;
+      }
+    }
+
+    // Community adoption: stars/installs/popularity
+    if (input.communityAdoptionScore > 0) {
+      if (input.communityAdoptionScore > 0.7) {
+        findings.add(const TrustFinding(
+          code: 'high_adoption',
+          title: 'Widely adopted',
+          detail: 'This repository is popular in the community.',
+          severity: TrustSeverity.info,
+        ));
+        score += 4;
+      } else if (input.communityAdoptionScore < 0.1 && input.appCount > 10) {
+        findings.add(const TrustFinding(
+          code: 'low_adoption',
+          title: 'Limited community adoption',
+          detail: 'This repository has low community adoption signals.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 2;
+      }
+    }
+
+    // Release consistency: total releases vs app count coherence
+    if (input.totalReleases > 0 && input.appCount > 0) {
+      final avgReleasesPerApp = input.totalReleases / input.appCount;
+      if (avgReleasesPerApp < 1.2 && input.totalReleases > 20) {
+        findings.add(const TrustFinding(
+          code: 'sparse_releases',
+          title: 'Few releases per app',
+          detail: 'Apps in this repository have very few releases on average.',
+          severity: TrustSeverity.low,
+        ));
+        score -= 3;
+      }
     }
 
     score = score.clamp(0, 100);

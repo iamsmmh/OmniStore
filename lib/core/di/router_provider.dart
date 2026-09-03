@@ -10,6 +10,7 @@ import '../../features/downloads/presentation/pages/downloads_page.dart';
 import '../../features/repositories/presentation/pages/repositories_page.dart';
 import '../../features/repositories/presentation/pages/source_details_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/health/presentation/pages/health_page.dart';
 import '../../features/app_details/presentation/pages/app_details_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -25,6 +26,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'updates', builder: (context, state) => const UpdatesPage()),
           GoRoute(path: 'downloads', builder: (context, state) => const DownloadsPage()),
           GoRoute(path: 'repositories', builder: (context, state) => const RepositoriesPage()),
+          GoRoute(path: 'health', builder: (context, state) => const HealthPage()),
           GoRoute(path: 'settings', builder: (context, state) => const SettingsPage()),
           GoRoute(
             path: 'app/:id',

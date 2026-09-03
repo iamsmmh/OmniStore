@@ -10,6 +10,7 @@ import '../../../search/presentation/pages/search_page.dart' as search;
 import '../../../updates/presentation/pages/updates_page.dart' as updates;
 import '../../../downloads/presentation/pages/downloads_page.dart' as downloads;
 import '../../../repositories/presentation/pages/repositories_page.dart' as repos;
+import '../../../health/presentation/pages/health_page.dart' as health;
 import '../../../settings/presentation/pages/settings_page.dart' as settings;
 
 class HomePage extends ConsumerStatefulWidget {
@@ -26,7 +27,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       body: IndexedStack(
-        index: currentIndex,
+        index: currentIndex.clamp(0, 7),
         children: const [
           _HomeTab(),
           discover.DiscoverPage(),
@@ -34,11 +35,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           updates.UpdatesPage(),
           downloads.DownloadsPage(),
           repos.RepositoriesPage(),
+          health.HealthPage(),
           settings.SettingsPage(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
+        selectedIndex: currentIndex.clamp(0, 7),
         onDestinationSelected: (index) => ref.read(currentIndexProvider.notifier).state = index,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
@@ -47,6 +49,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           NavigationDestination(icon: Icon(Icons.system_update_outlined), selectedIcon: Icon(Icons.system_update), label: 'Updates'),
           NavigationDestination(icon: Icon(Icons.download_outlined), selectedIcon: Icon(Icons.download), label: 'Downloads'),
           NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Sources'),
+          NavigationDestination(icon: Icon(Icons.health_and_safety_outlined), selectedIcon: Icon(Icons.health_and_safety), label: 'Health'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
@@ -94,9 +97,9 @@ class _HomeTab extends ConsumerWidget {
               Row(children: [
                 _QuickActionCard(icon: Icons.system_update, label: 'Updates', color: theme.colorScheme.primary, onTap: () => ref.read(currentIndexProvider.notifier).state = 3),
                 const SizedBox(width: 12),
-                _QuickActionCard(icon: Icons.favorite, label: 'Favorites', color: theme.colorScheme.tertiary, onTap: () async { final favs = await ref.read(appRepositoryProvider).getFavoriteApps(); if (context.mounted) _showListSheet(context, 'Favorites', favs.map((f) => f.name).toList()); }),
+                _QuickActionCard(icon: Icons.health_and_safety, label: 'Health', color: Colors.green, onTap: () => ref.read(currentIndexProvider.notifier).state = 6),
                 const SizedBox(width: 12),
-                _QuickActionCard(icon: Icons.history, label: 'Recent', color: theme.colorScheme.secondary, onTap: () => ref.read(currentIndexProvider.notifier).state = 2),
+                _QuickActionCard(icon: Icons.favorite, label: 'Favorites', color: theme.colorScheme.tertiary, onTap: () async { final favs = await ref.read(appRepositoryProvider).getFavoriteApps(); if (context.mounted) _showListSheet(context, 'Favorites', favs.map((f) => f.name).toList()); }),
                 const SizedBox(width: 12),
                 _QuickActionCard(icon: Icons.folder, label: 'Sources', color: theme.colorScheme.error, onTap: () => ref.read(currentIndexProvider.notifier).state = 5),
               ]),
