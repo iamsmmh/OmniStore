@@ -29,7 +29,7 @@ class OmniStoreApp extends ConsumerWidget {
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
           themeMode: themeMode,
-          theme: AppTheme.light(darkColorScheme),
+          theme: AppTheme.light(lightColorScheme),
           darkTheme: AppTheme.dark(darkColorScheme),
           routerConfig: router,
         );

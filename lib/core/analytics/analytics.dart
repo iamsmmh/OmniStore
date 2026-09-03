@@ -208,11 +208,13 @@ class AnalyticsService {
       final clean = _sanitize(value);
       if (clean != null) sanitized[key] = clean;
     });
-    await _sink.record(AnalyticsRecord(
-      event: event,
-      dimensions: sanitized,
-      value: value,
-    ));
+    await _sink.record(
+      AnalyticsRecord(
+        event: event,
+        dimensions: sanitized,
+        value: value,
+      ),
+    );
   }
 
   Future<void> flush() => _enabled ? _sink.flush() : Future.value();
