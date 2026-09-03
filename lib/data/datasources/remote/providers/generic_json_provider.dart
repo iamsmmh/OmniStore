@@ -164,7 +164,7 @@ class GenericJsonProvider implements RepositoryProvider {
         screenshots: (map['screenshots'] as List? ?? []).map((s) => s is String ? s : (s as Map)['url']?.toString() ?? '').where((s) => s.isNotEmpty).cast<String>().toList(),
         categories: categories,
         tags: (map['tags'] as List? ?? []).map((t) => t.toString()).toList(),
-        downloadSize: size is int ? size : int.tryParse(size.toString()) ?? 0,
+        downloadSize: size,
         minOsVersion: latest?['minOSVersion'] as String? ?? map['minOsVersion'] as String? ?? '',
         sourceUrl: sourceUrl,
         repositoryId: '',

@@ -24,7 +24,6 @@ class AppDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(appDetailsProvider(appId));
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('App Details')),
