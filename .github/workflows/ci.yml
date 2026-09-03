@@ -29,7 +29,7 @@ jobs:
           flutter pub get > /tmp/pubget.log 2>&1
           code=$?
           if [ $code -ne 0 ]; then
-            head -n 25 /tmp/pubget.log | sed 's/^/::error::pub-get: /'
+            { grep -vE '║|╔|╚|Welcome to Flutter|flutter config|analytics|Flutter tool' /tmp/pubget.log | grep -E 'error|Error|version|conflict|depend|SDK|because|solving|So,' | head -n 25; tail -n 6 /tmp/pubget.log; } | sed 's/^/::error::pub-get: /'
             exit $code
           fi
 
@@ -67,7 +67,7 @@ jobs:
           flutter pub get > /tmp/pubget.log 2>&1
           code=$?
           if [ $code -ne 0 ]; then
-            head -n 25 /tmp/pubget.log | sed 's/^/::error::pub-get: /'
+            { grep -vE '║|╔|╚|Welcome to Flutter|flutter config|analytics|Flutter tool' /tmp/pubget.log | grep -E 'error|Error|version|conflict|depend|SDK|because|solving|So,' | head -n 25; tail -n 6 /tmp/pubget.log; } | sed 's/^/::error::pub-get: /'
             exit $code
           fi
 
