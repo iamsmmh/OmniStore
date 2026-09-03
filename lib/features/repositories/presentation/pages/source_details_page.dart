@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/providers.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../domain/health/health_engine.dart';
+import '../../../../domain/models/repository_entity.dart';
+import '../../../../domain/security/trust_analyzer.dart';
 import '../../../../domain/security/trust_engine.dart';
 
 class SourceDetailsPage extends ConsumerWidget {
@@ -80,7 +82,7 @@ class SourceDetailsPage extends ConsumerWidget {
   }
 }
 
-final repositoryDetailsProvider = FutureProvider.family<dynamic, String>((ref, id) async {
+final repositoryDetailsProvider = FutureProvider.family<RepositoryEntity?, String>((ref, id) async {
   final m = ref.watch(repositoryManagerProvider);
   return m.getRepositoryById(id);
 });

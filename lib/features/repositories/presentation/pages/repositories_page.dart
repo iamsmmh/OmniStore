@@ -103,7 +103,6 @@ class _RepositoriesPageState extends ConsumerState<RepositoriesPage> {
 
   Future<void> _addRepository(String url, String typeName) async {
     final manager = ref.read(repositoryManagerProvider);
-    final security = ref.read(securityServiceProvider);
     final scaffold = ScaffoldMessenger.of(context);
 
     // Show validating
@@ -112,7 +111,7 @@ class _RepositoriesPageState extends ConsumerState<RepositoriesPage> {
     try {
       final type = RepositoryType.values.firstWhere((t) => t.name == typeName, orElse: () => RepositoryType.genericFeed);
       // Use validator for thorough checks
-      final validator = RepositoryValidator(securityService: security, registry: (manager as dynamic).providerRegistry);
+      final validator = ref.read(repositoryValidatorProvider);
       final report = await validator.validate(url, expectedType: type);
       if (!mounted) return;
       Navigator.pop(context);
