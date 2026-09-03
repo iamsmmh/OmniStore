@@ -128,7 +128,7 @@ class _DetailsBody extends ConsumerWidget {
             if (screenshots.isNotEmpty) ...[
               Text('Screenshots', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              SizedBox(height: 220, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: screenshots.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(screenshots[i], width: 130, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 130, color: theme.colorScheme.surfaceContainerLow, child: const Icon(Icons.image)))))),
+              SizedBox(height: 220, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: screenshots.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(screenshots[i], width: 130, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 130, color: theme.colorScheme.surfaceContainerLow, child: const Icon(Icons.image))))))),
               const SizedBox(height: 20),
             ],
             Text('About', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),

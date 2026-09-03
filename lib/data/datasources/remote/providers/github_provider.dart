@@ -1,7 +1,7 @@
 import 'package:logging/logging.dart';
-import '../../../domain/models/repository_entity.dart';
-import '../../../domain/models/app_entity.dart';
-import '../../../domain/services/repository_provider.dart';
+import '../../../../domain/models/repository_entity.dart';
+import '../../../../domain/models/app_entity.dart';
+import '../../../../domain/services/repository_provider.dart';
 import '../api_client.dart';
 
 /// GitHub Releases provider — production-ready.
