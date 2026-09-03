@@ -1,5 +1,5 @@
-import '../../models/app_entity.dart';
-import '../../models/release_entity.dart';
+import 'package:omnistore/domain/models/app_entity.dart';
+import 'package:omnistore/domain/models/release_entity.dart';
 
 /// Repository interface for app-related operations
 /// Following Clean Architecture - domain defines the contract

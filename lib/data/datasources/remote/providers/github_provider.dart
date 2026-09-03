@@ -1,9 +1,9 @@
 import 'package:logging/logging.dart';
 
-import '../../domain/models/repository_entity.dart';
-import '../../domain/models/app_entity.dart';
-import '../../domain/services/repository_provider.dart';
-import '../datasources/remote/api_client.dart';
+import 'package:omnistore/domain/models/repository_entity.dart';
+import 'package:omnistore/domain/models/app_entity.dart';
+import 'package:omnistore/domain/services/repository_provider.dart';
+import 'package:omnistore/data/datasources/remote/api_client.dart';
 
 /// GitHub repository provider
 /// Handles GitHub Releases-based repositories

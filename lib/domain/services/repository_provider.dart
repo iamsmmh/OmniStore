@@ -1,5 +1,5 @@
-import '../../models/repository_entity.dart';
-import '../../models/app_entity.dart';
+import 'package:omnistore/domain/models/repository_entity.dart';
+import 'package:omnistore/domain/models/app_entity.dart';
 
 /// Base interface for all repository providers (GitHub, GitLab, etc.)
 /// This enables the plugin architecture for new source types

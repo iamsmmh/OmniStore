@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
-import 'core/theme/app_theme.dart';
-import 'core/di/providers.dart';
-import 'core/di/router_provider.dart';
-import 'core/constants/app_constants.dart';
+import 'package:omnistore/core/theme/app_theme.dart';
+import 'package:omnistore/core/di/providers.dart';
+import 'package:omnistore/core/di/router_provider.dart';
+import 'package:omnistore/core/constants/app_constants.dart';
 
 class OmniStoreApp extends ConsumerWidget {
   const OmniStoreApp({super.key});
