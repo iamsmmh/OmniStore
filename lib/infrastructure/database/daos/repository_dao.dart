@@ -7,36 +7,43 @@ class RepositoryDao {
 
   RepositoryDao(this._isar);
 
+  List<RepositoryTable> _asRepositoryTableList(dynamic value) =>
+      (value as List).cast<RepositoryTable>();
+
+  RepositoryTable? _asRepositoryTable(dynamic value) => value as RepositoryTable?;
+
+  int _asInt(dynamic value) => value as int;
+
   /// Get all repositories
   Future<List<RepositoryTable>> getAll() async {
-    return _isar.repositoryTables.where().findAll();
+    return _asRepositoryTableList(await _isar.repositoryTables.where().findAll());
   }
 
   /// Get enabled repositories
   Future<List<RepositoryTable>> getEnabled() async {
-    return _isar.repositoryTables
+    return _asRepositoryTableList(await _isar.repositoryTables
         .where()
         .filter()
         .isEnabledEqualTo(true)
-        .findAll();
+        .findAll());
   }
 
   /// Get repository by ID
   Future<RepositoryTable?> getById(String repositoryId) async {
-    return _isar.repositoryTables
+    return _asRepositoryTable(await _isar.repositoryTables
         .where()
         .filter()
         .repositoryIdEqualTo(repositoryId)
-        .findFirst();
+        .findFirst());
   }
 
   /// Get repository by URL
   Future<RepositoryTable?> getByUrl(String url) async {
-    return _isar.repositoryTables
+    return _asRepositoryTable(await _isar.repositoryTables
         .where()
         .filter()
         .urlEqualTo(url)
-        .findFirst();
+        .findFirst());
   }
 
   /// Check if repository exists
@@ -109,6 +116,6 @@ class RepositoryDao {
 
   /// Get repository count
   Future<int> count() async {
-    return _isar.repositoryTables.count();
+    return _asInt(await _isar.repositoryTables.count());
   }
 }

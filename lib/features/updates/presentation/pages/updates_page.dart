@@ -44,7 +44,6 @@ class UpdatesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(updatesProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
