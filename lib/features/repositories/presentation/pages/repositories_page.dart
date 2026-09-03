@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/providers.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../domain/models/repository_entity.dart';
-import '../../../../domain/security/trust_engine.dart';
-import '../../../../domain/health/health_engine.dart';
 import '../../../../domain/validation/repository_validator.dart';
-import '../../../../core/security/security_service.dart';
-import '../../../../core/monitoring/monitoring_service.dart';
 
 final repositoriesProvider = FutureProvider<List<RepositoryEntity>>((ref) async {
   final manager = ref.watch(repositoryManagerProvider);
@@ -69,7 +64,7 @@ class _RepositoriesPageState extends ConsumerState<RepositoriesPage> {
     final formKey = GlobalKey<FormState>();
     String selectedType = RepositoryType.github.name;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Source'),
@@ -84,7 +79,7 @@ class _RepositoriesPageState extends ConsumerState<RepositoriesPage> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: selectedType,
+              value: selectedType,
               decoration: const InputDecoration(labelText: 'Type (auto-detected if generic)'),
               items: RepositoryType.values.map((t) => DropdownMenuItem(value: t.name, child: Text(t.name))).toList(),
               onChanged: (v) => selectedType = v ?? selectedType,
@@ -112,7 +107,7 @@ class _RepositoriesPageState extends ConsumerState<RepositoriesPage> {
     final scaffold = ScaffoldMessenger.of(context);
 
     // Show validating
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const AlertDialog(content: Row(children: [CircularProgressIndicator(), SizedBox(width: 16), Text('Validating repository...')])));
+    showDialog<void>(context: context, barrierDismissible: false, builder: (_) => const AlertDialog(content: Row(children: [CircularProgressIndicator(), SizedBox(width: 16), Text('Validating repository...')])));
 
     try {
       final type = RepositoryType.values.firstWhere((t) => t.name == typeName, orElse: () => RepositoryType.genericFeed);
@@ -227,7 +222,7 @@ class _RepositoryTile extends ConsumerWidget {
   }
 
   void _showDetails(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => DraggableScrollableSheet(

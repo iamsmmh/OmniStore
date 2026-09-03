@@ -10,7 +10,7 @@ import '../../../../domain/health/health_engine.dart';
 import '../../../../domain/security/trust_analyzer.dart';
 import '../../../../domain/security/trust_engine.dart';
 import '../../../../domain/updates/update_intelligence.dart';
-import '../../../../core/versioning/semantic_version.dart';
+import '../../../../infrastructure/installer/installer_manager.dart;
 
 final appDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, appId) async {
   final repo = ref.watch(appRepositoryProvider);
@@ -172,7 +172,7 @@ class _InstallActions extends StatelessWidget {
   final String version;
   final bool hasUpdate;
   final UpdateVerdict? verdict;
-  final dynamic manager;
+  final InstallerManager manager;
   final PlatformCapabilities capabilities;
   const _InstallActions({required this.downloadUrl, required this.bundleId, required this.version, required this.hasUpdate, required this.verdict, required this.manager, required this.capabilities});
 
