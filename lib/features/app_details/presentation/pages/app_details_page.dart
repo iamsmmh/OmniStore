@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/providers.dart';
+import '../../../../core/platform/platform_capabilities.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../domain/compatibility/compatibility_engine.dart';
 import '../../../../domain/health/health_engine.dart';
+import '../../../../domain/security/trust_analyzer.dart';
 import '../../../../domain/security/trust_engine.dart';
 import '../../../../domain/updates/update_intelligence.dart';
 import '../../../../core/versioning/semantic_version.dart';

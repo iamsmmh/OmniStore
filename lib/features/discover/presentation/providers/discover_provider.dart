@@ -100,7 +100,7 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       final newReleases = discovery.newReleases(limit: 12);
       final gems = discovery.hiddenGems(limit: 8);
       // Featured: use first collection or trending
-      final featured = collections.isNotEmpty ? collections.first.documents.take(6).toList() : trending.take(6).toList();
+      final featured = collections.isNotEmpty ? collections.first.apps.take(6).toList() : trending.take(6).toList();
 
       state = state.copyWith(
         isLoading: false,

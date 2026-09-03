@@ -6,7 +6,6 @@ import '../../../../core/di/providers.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../domain/health/health_engine.dart';
 import '../../../../domain/models/app_entity.dart';
-import '../../../../domain/models/repository_entity.dart';
 
 final _installedAppsProvider = FutureProvider<List<AppSummary>>((ref) async {
   final repo = ref.watch(appRepositoryProvider);
@@ -31,7 +30,7 @@ final _healthSummaryProvider = FutureProvider<Map<String, dynamic>>((ref) async 
     try {
       final releases = await appRepo.getReleasesForApp(app.id);
       if (releases.isNotEmpty) {
-        dates = releases.map((r) => r.publishedAt).toList();
+        dates = releases.map((r) => r.releaseDate).toList();
       }
     } catch (_) {}
     final score = healthEngine.evaluate(
@@ -227,7 +226,6 @@ class _HealthTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = score.status == AppHealthStatus.healthy ? Colors.green : score.status == AppHealthStatus.warning ? Colors.orange : Colors.red;
-    final repoColor = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
