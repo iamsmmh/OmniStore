@@ -10,6 +10,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   analyze-and-test:
     name: Analyze & Test
@@ -24,16 +28,69 @@ jobs:
           cache: true
 
       - name: Flutter version
-        run: flutter --version
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter --version 2>&1 | tee -a ci.log
 
       - name: Install dependencies
-        run: flutter pub get
+        id: pub
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "::group::flutter pub get"
+          echo "=== flutter pub get ===" | tee -a ci.log
+          flutter pub get 2>&1 | tee -a ci.log
+          echo "::endgroup::"
 
       - name: Generate code (freezed / json / isar)
-        run: dart run build_runner build --delete-conflicting-outputs
+        id: codegen
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "=== build_runner ===" | tee -a ci.log
+          dart run build_runner build --delete-conflicting-outputs 2>&1 | tee -a ci.log
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        id: analyze
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "=== flutter analyze ===" | tee -a ci.log
+          flutter analyze --no-fatal-infos 2>&1 | tee -a ci.log
 
       - name: Test
-        run: flutter test --reporter expanded
+        id: test
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "=== flutter test ===" | tee -a ci.log
+          flutter test --reporter expanded 2>&1 | tee -a ci.log
+
+      # The log is mirrored into a Check Run so it is readable through the
+      # REST API (raw job logs live on blob storage that not every network
+      # can reach).
+      - name: Publish log as check run
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let log = '';
+            try { log = fs.readFileSync('ci.log', 'utf8'); } catch (_) {}
+            const max = 60000;
+            if (log.length > max) log = '…(truncated)…\n' + log.slice(-max);
+            const failed = '${{ job.status }}' !== 'success';
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'CI Log',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: failed ? 'failure' : 'success',
+              output: {
+                title: failed ? 'CI failed' : 'CI passed',
+                summary: 'pub=${{ steps.pub.outcome }} codegen=${{ steps.codegen.outcome }} analyze=${{ steps.analyze.outcome }} test=${{ steps.test.outcome }}',
+                text: '```\n' + log + '\n```',
+              },
+            });
