@@ -190,6 +190,49 @@ lib/
 
 ---
 
+## 4b. Intelligence Layer (added 2026-09)
+
+Pure-Dart, codegen-free domain engines. No Flutter imports, no I/O, injectable
+clock — reusable unchanged on mobile, desktop and web.
+
+```
+core/
+├── versioning/semantic_version.dart      Correct semver parsing + bump classification
+├── search/text_matching.dart             Normalisation, bounded Damerau-Levenshtein
+├── analytics/analytics.dart              Opt-in, PII-sanitising, local-first analytics
+└── platform/
+    ├── platform_capabilities.dart        Per-target capability model
+    └── platform_detector.dart            Runtime detection (swappable on web)
+domain/
+├── discovery/
+│   ├── search_index.dart                 Inverted index, ranking, suggest, spell-correct
+│   └── recommendation_engine.dart        Similar / trending / gems / dynamic collections
+├── updates/update_intelligence.dart      Why an update matters + changelog diffing
+├── health/app_health.dart                Release-cadence health scoring
+├── security/trust_analyzer.dart          Repository trust + asset validation
+├── developer/developer_profile.dart      Profiles, verification, evidence-based badges
+└── community/community_contracts.dart    Designed seams, disabled by default
+data/services/
+├── discovery_service.dart                Façade owning the index lifecycle
+└── repository_catalog_source.dart        Storage-agnostic catalog adapter
+infrastructure/
+├── sync/sync_scheduler.dart              Sync v2 policy: priority, adaptive, backoff
+└── cache/offline_cache_policy.dart       Freshness model + cache decisions
+```
+
+**Invariants**
+
+1. `domain/` imports only `core/` — never Flutter, `data/` or `infrastructure/`.
+2. Every score ships a human-readable explanation (asserted by tests).
+3. Optional features default to disabled (`NoopAnalytics`, `DisabledCommunityService`).
+4. Offline never means an empty screen (`decideCacheUsage`).
+5. Sync work per round is bounded (`SyncPolicy.maxTasksPerRound`).
+
+See `docs/AUDIT.md` for the full audit, scalability/security/UX reviews,
+prioritisation matrix and roadmap.
+
+---
+
 ## 5. Domain Models
 
 ### AppEntity

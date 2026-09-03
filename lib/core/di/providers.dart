@@ -19,6 +19,16 @@ import '../../data/repositories/download_repository_impl.dart';
 import '../../data/datasources/remote/api_client.dart';
 import '../../data/services/search_service.dart';
 import '../theme/app_theme.dart';
+import '../analytics/analytics.dart';
+import '../platform/platform_capabilities.dart';
+import '../platform/platform_detector.dart';
+import '../../data/services/discovery_service.dart';
+import '../../data/services/repository_catalog_source.dart';
+import '../../domain/community/community_contracts.dart';
+import '../../domain/health/app_health.dart';
+import '../../domain/security/trust_analyzer.dart';
+import '../../domain/updates/update_intelligence.dart';
+import '../../infrastructure/sync/sync_scheduler.dart';
 
 // ─── Theme Providers ─────────────────────────────────────────
 
@@ -109,4 +119,58 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     appRepository: appRepository,
     notificationService: notificationService,
   );
+});
+
+// ─── Discovery / Intelligence Providers ──────────────────────
+
+/// Analytics is opt-in: the default sink records nothing at all.
+final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
+  return AnalyticsService(sink: LocalAnalytics(), enabled: false);
+});
+
+final catalogSourceProvider = Provider<CatalogSource>((ref) {
+  return RepositoryCatalogSource(
+    appRepository: ref.watch(appRepositoryProvider),
+  );
+});
+
+/// Owns the in-memory search index; kept alive for the app's lifetime.
+final discoveryServiceProvider = Provider<DiscoveryService>((ref) {
+  final service = DiscoveryService(
+    source: ref.watch(catalogSourceProvider),
+    analytics: ref.watch(analyticsServiceProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Resolves once the catalog has been indexed, so screens can await readiness
+/// instead of rendering an empty state during startup.
+final discoveryWarmupProvider = FutureProvider<void>((ref) async {
+  await ref.watch(discoveryServiceProvider).warmUp();
+});
+
+final updateIntelligenceProvider = Provider<UpdateIntelligence>((ref) {
+  return const UpdateIntelligence();
+});
+
+final trustAnalyzerProvider = Provider<TrustAnalyzer>((ref) {
+  return const TrustAnalyzer();
+});
+
+final appHealthAnalyzerProvider = Provider<AppHealthAnalyzer>((ref) {
+  return const AppHealthAnalyzer();
+});
+
+final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
+  return SyncScheduler();
+});
+
+/// Community features are disabled until a moderated backend exists.
+final communityServiceProvider = Provider<CommunityService>((ref) {
+  return const DisabledCommunityService();
+});
+
+final platformCapabilitiesProvider = Provider<PlatformCapabilities>((ref) {
+  return detectPlatformCapabilities();
 });
