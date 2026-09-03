@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 
-import '../../../core/network/http_client.dart';
-import '../../../core/security/security_service.dart';
+import 'package:omnistore/core/network/http_client.dart';
+import 'package:omnistore/core/security/security_service.dart';
 
 /// Centralized API client for all remote data sources
 class ApiClient {
@@ -22,7 +22,7 @@ class ApiClient {
     String owner,
     String repo,
   ) async {
-    final response = await _httpClient.get(
+    final response = await _httpClient.get<dynamic>(
       'https://api.github.com/repos/$owner/$repo',
       options: Options(headers: {'Accept': 'application/vnd.github.v3+json'}),
     );

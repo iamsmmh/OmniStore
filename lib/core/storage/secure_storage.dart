@@ -7,7 +7,6 @@ class SecureStorage {
 
   static const _keyAuthToken = 'auth_token';
   static const _keyRefreshToken = 'refresh_token';
-  static const _keyEncryptionKey = 'encryption_key';
 
   Future<void> write(String key, String value) async {
     try {
