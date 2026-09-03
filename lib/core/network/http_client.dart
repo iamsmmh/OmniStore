@@ -113,8 +113,8 @@ class RetryInterceptor extends Interceptor {
 
     for (int i = 0; i < retries; i++) {
       try {
-        await Future.delayed(retryDelay * (i + 1));
-        final response = await dio.request(
+        await Future<void>.delayed(retryDelay * (i + 1));
+        final response = await dio.request<dynamic>(
           err.requestOptions.path,
           options: Options(
             method: err.requestOptions.method,

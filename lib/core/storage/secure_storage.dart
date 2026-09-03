@@ -1,6 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:logging/logging.dart';
-import '../logger/app_logger.dart';
+import 'package:omnistore/core/logger/app_logger.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();

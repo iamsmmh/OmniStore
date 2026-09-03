@@ -1,6 +1,4 @@
-import 'package:logging/logging.dart';
-
-import '../logger/app_logger.dart';
+import 'package:omnistore/core/logger/app_logger.dart';
 
 /// Plugin system architecture for future extensibility
 /// Supports repository providers, installer providers, and metadata providers

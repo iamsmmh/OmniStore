@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:logging/logging.dart';
-import '../logger/app_logger.dart';
+import 'package:omnistore/core/logger/app_logger.dart';
 
 class SecurityService {
   final _logger = AppLogger.getLogger('SecurityService');
