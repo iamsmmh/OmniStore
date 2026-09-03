@@ -8,7 +8,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-import 'platform_capabilities.dart';
+import 'package:omnistore/core/platform/platform_capabilities.dart';
 
 /// Returns the capability set for the platform the app is running on.
 PlatformCapabilities detectPlatformCapabilities() {

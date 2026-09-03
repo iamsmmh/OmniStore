@@ -1,23 +1,19 @@
-import 'package:logging/logging.dart';
+import 'package:isar/isar.dart';
 
 import '../../core/logger/app_logger.dart';
 import '../../domain/models/app_entity.dart';
 import '../../domain/models/release_entity.dart';
 import '../../domain/repositories/app_repository.dart';
 import '../../infrastructure/database/database_provider.dart';
-import '../datasources/remote/api_client.dart';
 
 /// Implementation of AppRepository
 class AppRepositoryImpl implements AppRepository {
   final DatabaseService _database;
-  final ApiClient _apiClient;
   final _logger = AppLogger.getLogger('AppRepositoryImpl');
 
   AppRepositoryImpl({
     required Isar database,
-    required ApiClient apiClient,
-  })  : _database = DatabaseService(database),
-        _apiClient = apiClient;
+  })  : _database = DatabaseService(database);
 
   @override
   Future<List<AppSummary>> getAllApps({

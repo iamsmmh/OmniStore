@@ -1,7 +1,3 @@
-// Re-export from home page's discover tab
-export 'package:omnistore/features/home/presentation/pages/home_page.dart'
-    show HomePage;
-
 import 'package:flutter/material.dart';
 
 // Standalone discover page wrapper

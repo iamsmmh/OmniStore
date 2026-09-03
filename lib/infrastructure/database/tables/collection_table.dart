@@ -14,7 +14,7 @@ class CollectionTable {
   late String icon;
   late String color;
   List<String> appIds = [];
-  late DateTime createdAt;
+  DateTime? createdAt;
 
   String? description;
   DateTime? updatedAt;
@@ -29,7 +29,7 @@ class CollectionTable {
       ..icon = entity['icon'] as String
       ..color = entity['color'] as String
       ..appIds = List<String>.from(entity['appIds'] as List)
-      ..createdAt = entity['createdAt'] as DateTime
+      ..createdAt = entity['createdAt'] as DateTime?
       ..description = entity['description'] as String?
       ..updatedAt = entity['updatedAt'] as DateTime?
       ..isSystem = entity['isSystem'] as bool? ?? false;

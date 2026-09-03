@@ -1,9 +1,9 @@
 import 'package:logging/logging.dart';
 
-import '../../domain/models/repository_entity.dart';
-import '../../domain/models/app_entity.dart';
-import '../../domain/services/repository_provider.dart';
-import '../datasources/remote/api_client.dart';
+import 'package:omnistore/domain/models/repository_entity.dart';
+import 'package:omnistore/domain/models/app_entity.dart';
+import 'package:omnistore/domain/services/repository_provider.dart';
+import 'package:omnistore/data/datasources/remote/api_client.dart';
 
 /// GitHub repository provider
 /// Handles GitHub Releases-based repositories
@@ -28,7 +28,7 @@ class GitHubProvider implements RepositoryProvider {
     try {
       final parsed = _parseGitHubUrl(url);
       if (parsed == null) {
-        return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+        return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
       }
 
       // Fetch repo info
@@ -39,7 +39,7 @@ class GitHubProvider implements RepositoryProvider {
 
       return RepositoryValidationData(
         isValid: true,
-        name: repoInfo['full_name'] ?? '${parsed['owner']}/${parsed['repo']}',
+        name: repoInfo['full_name'] as String? ?? '${parsed['owner']}/${parsed['repo']}',
         description: repoInfo['description'] as String?,
         iconUrl: repoInfo['owner']?['avatar_url'] as String?,
         maintainer: repoInfo['owner']?['login'] as String?,
@@ -48,7 +48,7 @@ class GitHubProvider implements RepositoryProvider {
       );
     } catch (e) {
       _logger.severe('Failed to validate GitHub repo: $url', e);
-      return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+      return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
     }
   }
 

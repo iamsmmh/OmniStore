@@ -12,7 +12,7 @@ class CollectionEntity with _$CollectionEntity {
     required String icon,
     required String color,
     required List<String> appIds,
-    required DateTime createdAt,
+    DateTime? createdAt,
     String? description,
     DateTime? updatedAt,
     bool? isSystem,

@@ -1,15 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/material.dart';
 
-import '../features/home/presentation/pages/home_page.dart';
-import '../features/discover/presentation/pages/discover_page.dart';
-import '../features/search/presentation/pages/search_page.dart';
-import '../features/updates/presentation/pages/updates_page.dart';
-import '../features/downloads/presentation/pages/downloads_page.dart';
-import '../features/repositories/presentation/pages/repositories_page.dart';
-import '../features/settings/presentation/pages/settings_page.dart';
-import '../features/app_details/presentation/pages/app_details_page.dart';
+import 'package:omnistore/features/home/presentation/pages/home_page.dart';
+import 'package:omnistore/features/discover/presentation/pages/discover_page.dart';
+import 'package:omnistore/features/search/presentation/pages/search_page.dart';
+import 'package:omnistore/features/updates/presentation/pages/updates_page.dart';
+import 'package:omnistore/features/downloads/presentation/pages/downloads_page.dart';
+import 'package:omnistore/features/repositories/presentation/pages/repositories_page.dart';
+import 'package:omnistore/features/settings/presentation/pages/settings_page.dart';
+import 'package:omnistore/features/app_details/presentation/pages/app_details_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(

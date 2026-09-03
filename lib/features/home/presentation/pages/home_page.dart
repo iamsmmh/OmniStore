@@ -21,7 +21,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(currentIndexProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       body: IndexedStack(

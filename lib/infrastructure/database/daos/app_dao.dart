@@ -14,14 +14,14 @@ class AppDao {
     String? repositoryId,
     String? category,
   }) async {
-    var query = _isar.appTables.where();
+    var query = _isar.appTables.filter();
 
     if (repositoryId != null) {
-      query = query.filter().repositoryIdEqualTo(repositoryId);
+      query = query.repositoryIdEqualTo(repositoryId);
     }
 
     if (category != null) {
-      query = query.filter().categoriesContains(category);
+      query = query.categoriesElementEqualTo(category);
     }
 
     return query.offset(offset).limit(limit).findAll();
@@ -44,7 +44,7 @@ class AppDao {
     return _isar.appTables
         .where()
         .filter()
-        .categoriesContains(category)
+        .categoriesElementEqualTo(category)
         .offset(offset)
         .limit(limit)
         .findAll();

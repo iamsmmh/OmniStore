@@ -1,4 +1,4 @@
-import '../../models/repository_entity.dart';
+import 'package:omnistore/domain/models/repository_entity.dart';
 
 /// Repository interface for source management operations
 abstract class RepositoryManager {
