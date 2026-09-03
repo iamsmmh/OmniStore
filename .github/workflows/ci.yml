@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Flutter tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.27.4'
+          cache: true
+
+      - name: Resolve dependencies
+        run: |
+          set +e
+          flutter pub get > /tmp/pubget.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            { grep -vE '║|╔|╚|Welcome to Flutter|flutter config|analytics|Flutter tool' /tmp/pubget.log | grep -E 'error|Error|version|conflict|depend|SDK|because|solving|So,' | head -n 25; tail -n 6 /tmp/pubget.log; } | sed 's/^/::error::pub-get: /'
+            exit $code
+          fi
+
+      - name: Run unit tests
+        run: |
+          set +e
+          flutter test --reporter expanded > /tmp/test.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            { grep -E '\[E\]|Some tests failed|Error|error|Failed|failed' /tmp/test.log | head -n 25; tail -n 5 /tmp/test.log; } | sed 's/^/::error::test: /'
+            exit $code
+          fi
+
+  codegen-and-analyze:
+    name: Codegen + static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Informational for now: audit finding F-23 tracks the generated-code
+    # policy. Test failures in the `tests` job are the gating signal.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.27.4'
+          cache: true
+
+      - name: Resolve dependencies
+        run: |
+          set +e
+          flutter pub get > /tmp/pubget.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            { grep -vE '║|╔|╚|Welcome to Flutter|flutter config|analytics|Flutter tool' /tmp/pubget.log | grep -E 'error|Error|version|conflict|depend|SDK|because|solving|So,' | head -n 25; tail -n 6 /tmp/pubget.log; } | sed 's/^/::error::pub-get: /'
+            exit $code
+          fi
+
+      - name: Generate code (build_runner)
+        run: |
+          set +e
+          dart run build_runner build --delete-conflicting-outputs > /tmp/br.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            tail -n 25 /tmp/br.log | sed 's/^/::error::codegen: /'
+            exit $code
+          fi
+
+      - name: Analyze
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > /tmp/analyze.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            grep -E 'error •|warning •' /tmp/analyze.log | head -n 40 | sed 's/^/::error::analyze: /'
+            exit $code
+          fi

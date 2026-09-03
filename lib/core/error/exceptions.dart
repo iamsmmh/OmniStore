@@ -1,4 +1,4 @@
-/// Custom exceptions for OmniStore
+// Custom exceptions for OmniStore
 
 /// Base exception class
 class OmniStoreException implements Exception {

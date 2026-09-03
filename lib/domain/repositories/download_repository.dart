@@ -1,4 +1,4 @@
-import '../../models/download_entity.dart';
+import 'package:omnistore/domain/models/download_entity.dart';
 
 /// Repository interface for download management operations
 abstract class DownloadRepository {

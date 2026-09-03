@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 
 class AppTheme {
   AppTheme._();
@@ -29,8 +28,6 @@ class AppTheme {
   }
 
   static ThemeData _buildTheme(ColorScheme colorScheme, Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,

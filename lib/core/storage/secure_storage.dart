@@ -1,6 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:logging/logging.dart';
-import '../logger/app_logger.dart';
+import 'package:omnistore/core/logger/app_logger.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
@@ -8,7 +7,6 @@ class SecureStorage {
 
   static const _keyAuthToken = 'auth_token';
   static const _keyRefreshToken = 'refresh_token';
-  static const _keyEncryptionKey = 'encryption_key';
 
   Future<void> write(String key, String value) async {
     try {

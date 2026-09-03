@@ -1,9 +1,9 @@
-import 'package:isar/isar.dart';
+
 import '../tables/download_table.dart';
 
 /// Data Access Object for download operations
 class DownloadDao {
-  final Isar _isar;
+  final dynamic _isar;
 
   DownloadDao(this._isar);
 
