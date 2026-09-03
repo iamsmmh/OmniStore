@@ -24,10 +24,24 @@ jobs:
           cache: true
 
       - name: Resolve dependencies
-        run: flutter pub get
+        run: |
+          set +e
+          flutter pub get > /tmp/pubget.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            head -n 25 /tmp/pubget.log | sed 's/^/::error::pub-get: /'
+            exit $code
+          fi
 
       - name: Run unit tests
-        run: flutter test --reporter expanded
+        run: |
+          set +e
+          flutter test --reporter expanded > /tmp/test.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            { grep -E '\[E\]|Some tests failed|Error|error|Failed|failed' /tmp/test.log | head -n 25; tail -n 5 /tmp/test.log; } | sed 's/^/::error::test: /'
+            exit $code
+          fi
 
   codegen-and-analyze:
     name: Codegen + static analysis
@@ -48,10 +62,31 @@ jobs:
           cache: true
 
       - name: Resolve dependencies
-        run: flutter pub get
+        run: |
+          set +e
+          flutter pub get > /tmp/pubget.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            head -n 25 /tmp/pubget.log | sed 's/^/::error::pub-get: /'
+            exit $code
+          fi
 
       - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: |
+          set +e
+          dart run build_runner build --delete-conflicting-outputs > /tmp/br.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            tail -n 25 /tmp/br.log | sed 's/^/::error::codegen: /'
+            exit $code
+          fi
 
       - name: Analyze
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze > /tmp/analyze.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            head -n 25 /tmp/analyze.log | sed 's/^/::error::analyze: /'
+            exit $code
+          fi
