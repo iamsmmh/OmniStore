@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:logging/logging.dart';
-import '../constants/app_constants.dart';
-import '../logger/app_logger.dart';
+
+import 'package:omnistore/core/constants/app_constants.dart';
+import 'package:omnistore/core/logger/app_logger.dart';
 
 final _logger = AppLogger.getLogger('HttpClient');
 
@@ -17,6 +17,7 @@ class HttpClient {
         'Accept': 'application/json',
         'User-Agent': '${AppConstants.appName}/${AppConstants.appVersion}',
       },
+    ),
     ));
 
     _dio.interceptors.addAll([

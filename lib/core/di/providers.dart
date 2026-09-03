@@ -17,7 +17,6 @@ import 'package:omnistore/core/../data/repositories/repository_manager_impl.dart
 import 'package:omnistore/core/../data/repositories/download_repository_impl.dart';
 import 'package:omnistore/core/../data/datasources/remote/api_client.dart';
 import 'package:omnistore/core/../data/services/search_service.dart';
-import 'package:omnistore/core/theme/app_theme.dart';
 import 'package:omnistore/core/analytics/analytics.dart';
 import 'package:omnistore/core/platform/platform_capabilities.dart';
 import 'package:omnistore/core/platform/platform_detector.dart';
