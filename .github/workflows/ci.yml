@@ -87,6 +87,6 @@ jobs:
           flutter analyze --no-fatal-infos > /tmp/analyze.log 2>&1
           code=$?
           if [ $code -ne 0 ]; then
-            head -n 25 /tmp/analyze.log | sed 's/^/::error::analyze: /'
+            grep -E 'error •|warning •' /tmp/analyze.log | head -n 40 | sed 's/^/::error::analyze: /'
             exit $code
           fi

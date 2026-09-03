@@ -28,7 +28,7 @@ class AltStoreProvider implements RepositoryProvider {
       final sourceData = await _apiClient.getAltStoreSource(url);
 
       if (sourceData == null || sourceData['apps'] == null) {
-        return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+        return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
       }
 
       final apps = sourceData['apps'] as List;
@@ -45,7 +45,7 @@ class AltStoreProvider implements RepositoryProvider {
       );
     } catch (e) {
       _logger.severe('Failed to validate AltStore source: $url', e);
-      return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+      return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
     }
   }
 
@@ -74,7 +74,8 @@ class AltStoreProvider implements RepositoryProvider {
 
   AppEntity? _mapAltStoreApp(Map<String, dynamic> app, String sourceUrl) {
     try {
-      final versions = app['versions'] as List? ?? [];
+      final versions =
+        (app['versions'] as List? ?? []).cast<Map<String, dynamic>>();
       final latestVersion = versions.isNotEmpty ? versions.first : null;
 
       if (latestVersion == null) return null;

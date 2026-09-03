@@ -27,7 +27,7 @@ class OmniSourceProvider implements RepositoryProvider {
       final feedData = await _apiClient.getOmniSourceFeed(url);
 
       if (feedData == null) {
-        return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+        return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
       }
 
       final apps = feedData['apps'] as List? ?? [];
@@ -44,7 +44,7 @@ class OmniSourceProvider implements RepositoryProvider {
       );
     } catch (e) {
       _logger.severe('Failed to validate OmniSource feed: $url', e);
-      return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+      return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
     }
   }
 
@@ -54,7 +54,8 @@ class OmniSourceProvider implements RepositoryProvider {
       final feedData = await _apiClient.getOmniSourceFeed(url);
       if (feedData == null) return [];
 
-      final apps = feedData['apps'] as List? ?? [];
+      final apps =
+          (feedData['apps'] as List? ?? []).cast<Map<String, dynamic>>();
       return apps
           .map((app) => _mapOmniSourceApp(app, url))
           .whereType<AppEntity>()
@@ -71,7 +72,8 @@ class OmniSourceProvider implements RepositoryProvider {
       final feedData = await _apiClient.getOmniSourceUpdates(url, since);
       if (feedData == null) return [];
 
-      final apps = feedData['apps'] as List? ?? [];
+      final apps =
+          (feedData['apps'] as List? ?? []).cast<Map<String, dynamic>>();
       return apps
           .map((app) => _mapOmniSourceApp(app, url))
           .whereType<AppEntity>()

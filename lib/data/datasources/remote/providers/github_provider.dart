@@ -28,7 +28,7 @@ class GitHubProvider implements RepositoryProvider {
     try {
       final parsed = _parseGitHubUrl(url);
       if (parsed == null) {
-        return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+        return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
       }
 
       // Fetch repo info
@@ -48,7 +48,7 @@ class GitHubProvider implements RepositoryProvider {
       );
     } catch (e) {
       _logger.severe('Failed to validate GitHub repo: $url', e);
-      return RepositoryValidationData(isValid: false, name: '', appCount: 0);
+      return const RepositoryValidationData(isValid: false, name: '', appCount: 0);
     }
   }
 
