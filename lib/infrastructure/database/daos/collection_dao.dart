@@ -7,18 +7,23 @@ class CollectionDao {
 
   CollectionDao(this._isar);
 
+  List<CollectionTable> _asCollectionTableList(dynamic value) =>
+      (value as List).cast<CollectionTable>();
+
+  CollectionTable? _asCollectionTable(dynamic value) => value as CollectionTable?;
+
   /// Get all collections
   Future<List<CollectionTable>> getAll() async {
-    return _isar.collectionTables.where().findAll();
+    return _asCollectionTableList(await _isar.collectionTables.where().findAll());
   }
 
   /// Get collection by ID
   Future<CollectionTable?> getById(String collectionId) async {
-    return _isar.collectionTables
+    return _asCollectionTable(await _isar.collectionTables
         .where()
         .filter()
         .collectionIdEqualTo(collectionId)
-        .findFirst();
+        .findFirst());
   }
 
   /// Save collection

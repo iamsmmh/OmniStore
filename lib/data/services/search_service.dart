@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'package:logging/logging.dart';
 
 import '../../core/logger/app_logger.dart';
 import '../../domain/models/app_entity.dart';
@@ -23,7 +22,6 @@ class SearchService {
 
   // Invalidation token — incremented on sync so stale entries aren't served.
   int _cacheGeneration = 0;
-  DateTime? _lastSyncInvalidation;
 
   SearchService({required AppRepository appRepository})
       : _appRepository = appRepository;
@@ -34,7 +32,6 @@ class SearchService {
   void invalidateCache() {
     _searchCache.clear();
     _cacheGeneration++;
-    _lastSyncInvalidation = DateTime.now();
   }
 
   Future<List<AppSummary>> search(

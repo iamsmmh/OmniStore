@@ -49,6 +49,9 @@ class AltStoreProvider implements RepositoryProvider {
         } catch (_) {}
       }
       final hasValidStructure = apps.isNotEmpty;
+      if (hasValidStructure && withAssets == 0) {
+        _logger.warning('AltStore source has no downloadable app assets');
+      }
       if (!hasValidStructure) {
         return RepositoryValidationData(isValid: false, name: '', appCount: 0, metadata: data);
       }

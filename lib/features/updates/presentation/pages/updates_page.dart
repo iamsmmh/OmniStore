@@ -10,7 +10,9 @@ import '../../../../core/versioning/semantic_version.dart';
 final updatesProvider = FutureProvider<List<UpdateVerdict>>((ref) async {
   final appRepo = ref.watch(appRepositoryProvider);
   final intel = ref.watch(updateIntelligenceProvider);
-  final installed = await appRepo.getInstalled();
+  final installed = (await appRepo.getAllApps(pageSize: 1000))
+      .where((app) => app.isInstalled == true)
+      .toList();
   // Build candidates from installed vs latest
   final candidates = <ReleaseCandidate>[];
   for (final summary in installed) {
@@ -19,9 +21,7 @@ final updatesProvider = FutureProvider<List<UpdateVerdict>>((ref) async {
       if (entity == null) continue;
       if (entity.version == summary.installedVersion) continue;
       // Only newer versions
-      final newer = SemanticVersion.tryParse(entity.version) != null && SemanticVersion.tryParse(summary.installedVersion ?? '0.0.0') != null
-          ? SemanticVersion.parse(entity.version).compareTo(SemanticVersion.parse(summary.installedVersion!)) > 0
-          : entity.version != summary.installedVersion;
+      final newer = SemanticVersion.isNewer(entity.version, summary.installedVersion);
       if (!newer) continue;
       candidates.add(ReleaseCandidate(
         appId: entity.id,
@@ -44,7 +44,6 @@ class UpdatesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(updatesProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(

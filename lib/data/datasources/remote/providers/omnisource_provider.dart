@@ -37,6 +37,9 @@ class OmniSourceProvider implements RepositoryProvider {
           if ((m['downloadUrl'] ?? m['downloadURL'] ?? m['url']) != null) withAssets++;
         } catch (_) {}
       }
+      if (apps.isNotEmpty && withAssets == 0) {
+        _logger.warning('OmniSource feed has no downloadable app assets');
+      }
       return RepositoryValidationData(
         isValid: true,
         name: feedInfo?['name'] as String? ?? data['name'] as String? ?? 'OmniSource Feed',

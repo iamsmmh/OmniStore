@@ -1,5 +1,4 @@
 import '../../core/search/text_matching.dart';
-import 'search_index.dart';
 import '../health/app_health.dart';
 
 enum DiscoverySection { related, popular, trending, verified }

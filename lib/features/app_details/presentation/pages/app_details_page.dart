@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/providers.dart';
+import '../../../../core/platform/platform_capabilities.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../domain/compatibility/compatibility_engine.dart';
 import '../../../../domain/health/health_engine.dart';
+import '../../../../domain/security/trust_analyzer.dart';
 import '../../../../domain/security/trust_engine.dart';
 import '../../../../domain/updates/update_intelligence.dart';
-import '../../../../core/versioning/semantic_version.dart';
+import '../../../../infrastructure/installer/installer_manager.dart';
 
 final appDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, appId) async {
   final repo = ref.watch(appRepositoryProvider);
@@ -24,7 +26,6 @@ class AppDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(appDetailsProvider(appId));
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('App Details')),
@@ -128,7 +129,7 @@ class _DetailsBody extends ConsumerWidget {
             if (screenshots.isNotEmpty) ...[
               Text('Screenshots', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              SizedBox(height: 220, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: screenshots.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(screenshots[i], width: 130, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 130, color: theme.colorScheme.surfaceContainerLow, child: const Icon(Icons.image)))))),
+              SizedBox(height: 220, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: screenshots.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(screenshots[i], width: 130, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 130, color: theme.colorScheme.surfaceContainerLow, child: const Icon(Icons.image))))))),
               const SizedBox(height: 20),
             ],
             Text('About', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
@@ -171,7 +172,7 @@ class _InstallActions extends StatelessWidget {
   final String version;
   final bool hasUpdate;
   final UpdateVerdict? verdict;
-  final dynamic manager;
+  final InstallerManager manager;
   final PlatformCapabilities capabilities;
   const _InstallActions({required this.downloadUrl, required this.bundleId, required this.version, required this.hasUpdate, required this.verdict, required this.manager, required this.capabilities});
 

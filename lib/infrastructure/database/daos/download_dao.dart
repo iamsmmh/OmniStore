@@ -7,20 +7,25 @@ class DownloadDao {
 
   DownloadDao(this._isar);
 
+  List<DownloadTable> _asDownloadTableList(dynamic value) =>
+      (value as List).cast<DownloadTable>();
+
+  DownloadTable? _asDownloadTable(dynamic value) => value as DownloadTable?;
+
   /// Get all downloads
   Future<List<DownloadTable>> getAll() async {
-    return _isar.downloadTables.where().sortByCreatedAtDesc().findAll();
+    return _asDownloadTableList(await _isar.downloadTables.where().sortByCreatedAtDesc().findAll());
   }
 
   /// Get active downloads (pending or downloading)
   Future<List<DownloadTable>> getActive() async {
-    return _isar.downloadTables
+    return _asDownloadTableList(await _isar.downloadTables
         .where()
         .filter()
         .statusEqualTo('downloading')
         .or()
         .statusEqualTo('pending')
-        .findAll();
+        .findAll());
   }
 
   /// Get download history
@@ -28,7 +33,7 @@ class DownloadDao {
     int offset = 0,
     int limit = 50,
   }) async {
-    return _isar.downloadTables
+    return _asDownloadTableList(await _isar.downloadTables
         .where()
         .filter()
         .statusEqualTo('completed')
@@ -39,16 +44,16 @@ class DownloadDao {
         .sortByCreatedAtDesc()
         .offset(offset)
         .limit(limit)
-        .findAll();
+        .findAll());
   }
 
   /// Get download by ID
   Future<DownloadTable?> getById(String downloadId) async {
-    return _isar.downloadTables
+    return _asDownloadTable(await _isar.downloadTables
         .where()
         .filter()
         .downloadIdEqualTo(downloadId)
-        .findFirst();
+        .findFirst());
   }
 
   /// Get download for app version
@@ -56,13 +61,13 @@ class DownloadDao {
     String appId,
     String version,
   ) async {
-    return _isar.downloadTables
+    return _asDownloadTable(await _isar.downloadTables
         .where()
         .filter()
         .appIdEqualTo(appId)
         .and()
         .versionEqualTo(version)
-        .findFirst();
+        .findFirst());
   }
 
   /// Save download
@@ -139,14 +144,16 @@ class DownloadDao {
 
   /// Get queue position
   Future<int> getQueuePosition(String downloadId) async {
-    final pending = await _isar.downloadTables
-        .where()
-        .filter()
-        .statusEqualTo('pending')
-        .or()
-        .statusEqualTo('downloading')
-        .sortByCreatedAt()
-        .findAll();
+    final pending = (await _isar.downloadTables
+            .where()
+            .filter()
+            .statusEqualTo('pending')
+            .or()
+            .statusEqualTo('downloading')
+            .sortByCreatedAt()
+            .findAll()
+        as List)
+        .cast<DownloadTable>();
 
     final index = pending.indexWhere((d) => d.downloadId == downloadId);
     return index >= 0 ? index : -1;

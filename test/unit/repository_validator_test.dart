@@ -1,24 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:omnistore/core/security/security_service.dart';
+import 'package:omnistore/domain/models/app_entity.dart';
+import 'package:omnistore/domain/models/repository_entity.dart';
 import 'package:omnistore/domain/services/repository_provider.dart';
 import 'package:omnistore/domain/validation/repository_validator.dart';
 
 class _FakeProvider implements RepositoryProvider {
-  final RepositoryType type;
+  final RepositoryType _type;
   final bool isValid;
-  _FakeProvider(this.type, {this.isValid = true});
+
+  _FakeProvider(this._type, {this.isValid = true});
+
   @override
-  RepositoryType get typeField => type;
-  @override
-  RepositoryType get type => type;
+  RepositoryType get type => _type;
+
   @override
   bool canHandle(String url) => true;
+
   @override
-  Future<RepositoryValidationData> validate(String url) async => RepositoryValidationData(isValid: isValid, name: 'Fake', appCount: 2, metadata: {'name': 'Test'});
+  Future<RepositoryValidationData> validate(String url) async =>
+      RepositoryValidationData(
+        isValid: isValid,
+        name: 'Fake',
+        appCount: 2,
+        metadata: {'name': 'Test'},
+      );
+
   @override
-  Future<List<dynamic>> fetchApps(String url) async => [];
+  Future<List<AppEntity>> fetchApps(String url) async => [];
+
   @override
-  Future<List<dynamic>> fetchUpdates(String url, DateTime since) async => [];
+  Future<List<AppEntity>> fetchUpdates(String url, DateTime since) async => [];
 }
 
 void main() {
@@ -29,7 +41,10 @@ void main() {
     setUp(() {
       registry = RepositoryProviderRegistry();
       registry.register(_FakeProvider(RepositoryType.genericFeed));
-      validator = RepositoryValidator(securityService: SecurityService(), registry: registry);
+      validator = RepositoryValidator(
+        securityService: SecurityService(),
+        registry: registry,
+      );
     });
 
     test('rejects non-https URL', () async {
@@ -51,8 +66,13 @@ void main() {
 
     test('detects empty repository', () async {
       final reg2 = RepositoryProviderRegistry();
-      reg2.register(_FakeProvider(RepositoryType.genericFeed, isValid: false));
-      final v2 = RepositoryValidator(securityService: SecurityService(), registry: reg2);
+      reg2.register(
+        _FakeProvider(RepositoryType.genericFeed, isValid: false),
+      );
+      final v2 = RepositoryValidator(
+        securityService: SecurityService(),
+        registry: reg2,
+      );
       final report = await v2.validate('https://example.com/empty.json');
       expect(report.isValid, isFalse);
     });

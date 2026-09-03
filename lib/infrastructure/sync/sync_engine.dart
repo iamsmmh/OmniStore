@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:logging/logging.dart';
 
 import '../../core/logger/app_logger.dart';
 import '../../domain/repositories/repository_manager.dart';
@@ -30,8 +29,6 @@ class SyncEngine {
   bool _isSyncing = false;
   final StreamController<SyncStatus> _statusController = StreamController<SyncStatus>.broadcast();
   final Map<String, RepositorySyncState> _syncStates = {};
-  DateTime? _lastFullSync;
-  int _consecutiveGlobalFailures = 0;
 
   SyncEngine({
     required RepositoryManager repositoryManager,
@@ -154,13 +151,6 @@ class SyncEngine {
         _statusController.add(SyncStatus.progress(completed: i + batch.length, total: tasks.length));
       }
 
-      _lastFullSync = DateTime.now();
-      if (failures == 0) {
-        _consecutiveGlobalFailures = 0;
-      } else {
-        _consecutiveGlobalFailures++;
-      }
-
       // Rate limit handling: if many failures, back off next periodic sync
       if (failures > successes && failures > 3) {
         _logger.warning('High failure rate ($failures/${tasks.length}), backing off');
@@ -178,7 +168,6 @@ class SyncEngine {
       _logger.severe('Sync failed', e, stack);
       _monitoring?.logError(e, stack, context: 'Sync all failed');
       _statusController.add(SyncStatus.failed(error: e.toString()));
-      _consecutiveGlobalFailures++;
       try {
         await _notificationService.showSyncAlert(title: 'Sync Failed', body: 'Failed to sync repositories: $e');
       } catch (_) {}
@@ -197,7 +186,7 @@ class SyncEngine {
         if (attempt < maxAttempts) {
           final backoff = _scheduler.backoffFor(attempt);
           _logger.info('Retrying ${task.repositoryId} in ${backoff.inMilliseconds}ms (attempt $attempt)');
-          await Future.delayed(backoff);
+          await Future<void>.delayed(backoff);
         }
       } catch (e) {
         if (attempt >= maxAttempts) {
@@ -205,7 +194,7 @@ class SyncEngine {
           _updateSyncState(task.repositoryId, SyncOutcome.failed);
           return SyncOutcome.failed;
         }
-        await Future.delayed(_scheduler.backoffFor(attempt));
+        await Future<void>.delayed(_scheduler.backoffFor(attempt));
       }
     }
     _updateSyncState(task.repositoryId, SyncOutcome.failed);

@@ -133,7 +133,7 @@ class _HomeTab extends ConsumerWidget {
   }
 
   void _showListSheet(BuildContext context, String title, List<String> items) {
-    showModalBottomSheet(context: context, builder: (_) => ListView(padding: const EdgeInsets.all(16), shrinkWrap: true, children: [Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)), const SizedBox(height: 12), if (items.isEmpty) const Text('Nothing here yet.'), ...items.map((n) => ListTile(title: Text(n))) ]));
+    showModalBottomSheet<void>(context: context, builder: (_) => ListView(padding: const EdgeInsets.all(16), shrinkWrap: true, children: [Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)), const SizedBox(height: 12), if (items.isEmpty) const Text('Nothing here yet.'), ...items.map((n) => ListTile(title: Text(n))) ]));
   }
 }
 
@@ -192,7 +192,7 @@ final recentlyUpdatedProvider = FutureProvider((ref) async {
   return repo.getRecentlyUpdatedApps(limit: 12);
 });
 
-final discoverPreviewProvider = FutureProvider((ref) async {
+final discoverPreviewProvider = FutureProvider<List<_IntroSummary>>((ref) async {
   final discovery = ref.watch(discoveryServiceProvider);
   // Ensure warmed
   try {
@@ -204,7 +204,16 @@ final discoverPreviewProvider = FutureProvider((ref) async {
     }
   } catch (_) {}
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getTrendingApps(limit: 8);
+  final apps = await repo.getTrendingApps(limit: 8);
+  return apps
+      .map((app) => _IntroSummary(
+            id: app.id,
+            name: app.name,
+            developer: app.developer,
+            version: app.version,
+            iconUrl: app.iconUrl,
+          ))
+      .toList();
 });
 
 _IntroSummary _DocToSummary(dynamic doc) {

@@ -37,17 +37,17 @@ final databaseProvider = FutureProvider<dynamic>((ref) async {
 
   // Try to open real Isar; if schemas are stubs (null) or open fails, use FakeIsar.
   try {
-    final schemas = [
-      AppTableSchema(),
-      RepositoryTableSchema(),
-      DownloadTableSchema(),
-      CollectionTableSchema(),
-    ].where((s) => s != null).toList();
+    final schemas = <dynamic>[
+      AppTableSchema,
+      RepositoryTableSchema,
+      DownloadTableSchema,
+      CollectionTableSchema,
+    ].whereType<CollectionSchema<dynamic>>().toList();
 
     if (schemas.isNotEmpty) {
       try {
         final isar = await Isar.open(
-          schemas.cast<CollectionSchema<dynamic>>(),
+          schemas,
           directory: dir.path,
           name: AppConstants.databaseName,
           inspector: true,
@@ -55,7 +55,7 @@ final databaseProvider = FutureProvider<dynamic>((ref) async {
         await _runMigrations(isar, logger);
         logger.info('Database opened at ${dir.path}/${AppConstants.databaseName}');
         return isar;
-      } catch (e, stack) {
+      } catch (e) {
         logger.warning('Isar open failed, falling back to FakeIsar: $e');
       }
     } else {
@@ -74,19 +74,19 @@ final databaseProvider = FutureProvider<dynamic>((ref) async {
 Future<void> _runMigrations(dynamic isar, dynamic logger) async {
   try {
     await isar.writeTxn(() async {
-      final apps = await isar.appTables.where().findAll();
-      final seen = <String, dynamic>{};
+      final apps = (await isar.appTables.where().findAll() as List).cast<AppTable>();
+      final seen = <String, AppTable>{};
       final toDelete = <int>[];
       for (final app in apps) {
-        final existing = seen[app.appId as String];
+        final existing = seen[app.appId];
         if (existing == null) {
-          seen[app.appId as String] = app;
+          seen[app.appId] = app;
         } else {
-          final keepNewer = (app.releaseDate as DateTime).isAfter(existing.releaseDate as DateTime);
+          final keepNewer = app.releaseDate.isAfter(existing.releaseDate);
           final toRemove = keepNewer ? existing : app;
           final toKeep = keepNewer ? app : existing;
           if (toRemove.id != null) toDelete.add(toRemove.id as int);
-          seen[app.appId as String] = toKeep;
+          seen[app.appId] = toKeep;
         }
       }
       for (final id in toDelete) {
@@ -96,10 +96,15 @@ Future<void> _runMigrations(dynamic isar, dynamic logger) async {
     });
 
     await isar.writeTxn(() async {
-      final repos = await isar.repositoryTables.where().findAll();
-      final validIds = repos.map((r) => r.repositoryId as String).toSet();
-      final orphaned = await isar.appTables.filter().repositoryIdNotEqualTo('').findAll();
-      final orphans = orphaned.where((a) => !(validIds as Set<String>).contains(a.repositoryId as String)).toList();
+      final repos = (await isar.repositoryTables.where().findAll() as List)
+          .cast<RepositoryTable>();
+      final validIds = repos.map((r) => r.repositoryId).toSet();
+      final orphaned =
+          (await isar.appTables.filter().repositoryIdNotEqualTo('').findAll()
+                  as List)
+              .cast<AppTable>();
+      final orphans =
+          orphaned.where((a) => !validIds.contains(a.repositoryId)).toList();
       for (final o in orphans) {
         if (o.id != null) await isar.appTables.delete(o.id as int);
       }
@@ -107,9 +112,10 @@ Future<void> _runMigrations(dynamic isar, dynamic logger) async {
     });
 
     await isar.writeTxn(() async {
-      final repos = await isar.repositoryTables.where().findAll();
+      final repos = (await isar.repositoryTables.where().findAll() as List)
+          .cast<RepositoryTable>();
       for (final r in repos) {
-        final trimmed = (r.url as String).trim();
+        final trimmed = r.url.trim();
         if (r.url != trimmed) {
           r.url = trimmed;
           await isar.repositoryTables.put(r);
@@ -154,17 +160,22 @@ class DatabaseService {
   }
 
   Future<T> transaction<T>(Future<T> Function() action) async {
-    return _isar.writeTxn(() async => await action());
+    final result = await _isar.writeTxn(() async => await action());
+    return result as T;
   }
 
   Future<Map<String, dynamic>> integrityCheck() async {
     final appCount = await _isar.appTables.count();
     final repoCount = await _isar.repositoryTables.count();
     final downloadCount = await _isar.downloadTables.count();
-    final repos = await _isar.repositoryTables.where().findAll();
-    final validIds = repos.map((r) => r.repositoryId as String).toSet();
-    final apps = await _isar.appTables.where().findAll();
-    final orphaned = apps.where((a) => (a.repositoryId as String).isNotEmpty && !(validIds as Set<String>).contains(a.repositoryId as String)).length;
+    final repos = (await _isar.repositoryTables.where().findAll() as List)
+        .cast<RepositoryTable>();
+    final validIds = repos.map((r) => r.repositoryId).toSet();
+    final apps = (await _isar.appTables.where().findAll() as List)
+        .cast<AppTable>();
+    final orphaned = apps
+        .where((a) => a.repositoryId.isNotEmpty && !validIds.contains(a.repositoryId))
+        .length;
     return {
       'appCount': appCount,
       'repositoryCount': repoCount,

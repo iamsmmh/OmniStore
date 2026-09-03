@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/logger/app_logger.dart';

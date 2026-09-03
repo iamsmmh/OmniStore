@@ -1,4 +1,3 @@
-import 'package:logging/logging.dart';
 import '../../core/logger/app_logger.dart';
 import '../../core/security/security_service.dart';
 import '../models/repository_entity.dart';

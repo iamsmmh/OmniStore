@@ -45,7 +45,11 @@ class FakeAppCollection {
   List<dynamic> _apply() {
     var items = _store.values.toList();
     if (_orGroups.isNotEmpty || _orMode) {
-      final groups = [..._orGroups, if (_predicates.isNotEmpty) List.from(_predicates)];
+      final groups = <List<bool Function(dynamic)>>[
+        ..._orGroups,
+        if (_predicates.isNotEmpty)
+          List<bool Function(dynamic)>.from(_predicates),
+      ];
       if (groups.isNotEmpty) items = items.where((a) => groups.any((g) => g.every((p) => p(a)))).toList();
     } else if (_predicates.isNotEmpty) {
       items = items.where((a) => _predicates.every((p) => p(a))).toList();
@@ -130,7 +134,11 @@ class FakeDownloadCollection {
   List<dynamic> _apply() {
     var items = _store.values.toList();
     if (_orGroups.isNotEmpty || _orMode) {
-      final groups = [..._orGroups, if (_predicates.isNotEmpty) List.from(_predicates)];
+      final groups = <List<bool Function(dynamic)>>[
+        ..._orGroups,
+        if (_predicates.isNotEmpty)
+          List<bool Function(dynamic)>.from(_predicates),
+      ];
       if (groups.isNotEmpty) items = items.where((d) => groups.any((g) => g.every((p) => p(d)))).toList();
     } else if (_predicates.isNotEmpty) {
       items = items.where((d) => _predicates.every((p) => p(d))).toList();

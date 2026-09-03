@@ -1,11 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 
 import '../network/http_client.dart';
 import '../security/security_service.dart';
 import '../storage/secure_storage.dart';
-import '../constants/app_constants.dart';
 import '../../infrastructure/database/database_provider.dart';
 import '../../infrastructure/notifications/notification_service.dart';
 import '../../infrastructure/sync/sync_engine.dart';
@@ -18,7 +16,6 @@ import '../../data/repositories/repository_manager_impl.dart';
 import '../../data/repositories/download_repository_impl.dart';
 import '../../data/datasources/remote/api_client.dart';
 import '../../data/services/search_service.dart';
-import '../theme/app_theme.dart';
 import '../analytics/analytics.dart';
 import '../platform/platform_capabilities.dart';
 import '../platform/platform_detector.dart';

@@ -134,7 +134,10 @@ class GenericJsonProvider implements RepositoryProvider {
           map['downloadUrl'] as String? ??
           map['url'] as String? ??
           map['download_url'] as String?;
-      final size = latest?['size'] as int? ?? map['size'] as int? ?? map['downloadSize'] as int? ?? 0;
+      final rawSize = latest?['size'] ?? map['size'] ?? map['downloadSize'];
+      final size = rawSize is int
+          ? rawSize
+          : int.tryParse(rawSize?.toString() ?? '') ?? 0;
       final dateStr = latest?['date'] as String? ?? map['releaseDate'] as String? ?? map['date'] as String? ?? map['updatedAt'] as String?;
       final icon = map['iconURL'] as String? ?? map['iconUrl'] as String? ?? map['icon'] as String? ?? '';
 
@@ -161,7 +164,7 @@ class GenericJsonProvider implements RepositoryProvider {
         screenshots: (map['screenshots'] as List? ?? []).map((s) => s is String ? s : (s as Map)['url']?.toString() ?? '').where((s) => s.isNotEmpty).cast<String>().toList(),
         categories: categories,
         tags: (map['tags'] as List? ?? []).map((t) => t.toString()).toList(),
-        downloadSize: size is int ? size : int.tryParse(size.toString()) ?? 0,
+        downloadSize: size,
         minOsVersion: latest?['minOSVersion'] as String? ?? map['minOsVersion'] as String? ?? '',
         sourceUrl: sourceUrl,
         repositoryId: '',

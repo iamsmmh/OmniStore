@@ -218,7 +218,6 @@ class _FilterChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final category = ref.watch(selectedCategoryProvider);
     final source = ref.watch(selectedSourceProvider);
-    final categories = ['Games', 'Productivity', 'Utilities', 'Social', 'Music', 'Developer'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -256,7 +255,7 @@ class _FilterChips extends ConsumerWidget {
 
   void _showCategorySheet(BuildContext context, WidgetRef ref) {
     final categories = ['Games', 'Productivity', 'Utilities', 'Social', 'Music', 'Developer', 'Photo', 'Health'];
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       builder: (_) => ListView(
         shrinkWrap: true,
@@ -270,9 +269,9 @@ class _FilterChips extends ConsumerWidget {
   }
 
   void _showSourceSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => Consumer(
+      builder: (_) => Consumer(
         builder: (context, ref, _) {
           final reposAsync = ref.watch(repositoriesListProvider);
           return ListView(
